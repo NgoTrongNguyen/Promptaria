@@ -211,10 +211,17 @@ app.add_middleware(
 
 
 # Nạp model
-model = load_terrain_model("C:\\VSCode Project\\Promptaria\\terrain_gen20.pth")
+import os
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+model_path = os.path.join(BASE_DIR, "terrain_gen20.pth")
+model = load_terrain_model(model_path)
 
 class InputData(BaseModel):
     Matrix: str
+
+class WeaponData(BaseModel):
+    pixels: list[int]
+    size: int
 
 @app.get("/")
 def read_root():
@@ -229,3 +236,44 @@ def process_signal(data: InputData):
         final_map = (predicted > 0.5).float()
         refined_map = refine_terrain(final_map.squeeze())
     return {"result": refined_map.tolist()}
+
+@app.post("/predict-weapon")
+def predict_weapon(data: WeaponData):
+    # Heuristic based similarity logic
+    # pixels is a flat array of length size*size
+    pixels = np.array(data.pixels).reshape((data.size, data.size))
+    
+    # Calculate density
+    density = np.sum(pixels > 0) / (data.size * data.size)
+    
+    # Calculate orientation/spread
+    y_indices, x_indices = np.where(pixels > 0)
+    if len(x_indices) > 1:
+        x_spread = np.max(x_indices) - np.min(x_indices)
+        y_spread = np.max(y_indices) - np.min(y_indices)
+        
+        # Long/thin shapes are often melee (swords, spears)
+        # More distributed or complex shapes might be ranged (bows, staffs)
+        aspect_ratio = max(x_spread, 1) / max(y_spread, 1)
+        
+        if aspect_ratio > 2 or aspect_ratio < 0.5:
+            melee_sim = 0.8
+            ranged_sim = 0.2
+        else:
+            melee_sim = 0.4
+            ranged_sim = 0.6
+    else:
+        melee_sim = 0.5
+        ranged_sim = 0.5
+        
+    # Scale similarities based on density (too empty -> low sim)
+    scale = min(density * 10, 1.0)
+    melee_sim *= scale
+    ranged_sim *= scale
+    
+    return {
+        "similarities": {
+            "melee": float(melee_sim),
+            "ranged": float(ranged_sim)
+        }
+    }
