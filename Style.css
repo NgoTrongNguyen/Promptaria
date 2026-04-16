@@ -1,0 +1,29 @@
+body { 
+            background: #1a1a1a; 
+            color: #eee; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0;
+            padding: 20px;
+        }
+        canvas { 
+            border: 5px solid #333; 
+            border-radius: 4px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            image-rendering: pixelated; /* Giữ các khối vuông sắc nét */
+            background-color: #87CEEB; /* Màu nền trời */
+        }
+        .legend { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 15px; 
+            margin-top: 25px; 
+            background: #252525;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .item { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+        .box { width: 18px; height: 18px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.2); }
+   
