@@ -10,7 +10,14 @@
 <body>
 
     
-    <canvas id="terrainCanvas"></canvas>
+    <canvas id="gc" style="display:block;border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary);cursor:none;width:100%;max-width:1200px;image-rendering:pixelated;"></canvas>
+<div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+  <span style="font-size:13px;color:var(--color-text-secondary);">Di chuyển:</span>
+  <kbd style="font-size:12px;padding:3px 8px;border-radius:4px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);">A / ←</kbd>
+  <kbd style="font-size:12px;padding:3px 8px;border-radius:4px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);">D / →</kbd>
+  <kbd style="font-size:12px;padding:3px 8px;border-radius:4px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);">W / ↑ / Space</kbd>
+  <span style="font-size:13px;color:var(--color-text-secondary);">= Nhảy</span>
+</div>
 
 
     <script type="module" src="JavaScript/Script.js" defer> </script>

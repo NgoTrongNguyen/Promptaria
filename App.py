@@ -146,11 +146,11 @@ def refine_terrain(matrix_2d):
     STONE = 3
     WOOD = 4
     LEAVES = 5
-    COAL = 6
-    IRON = 7
-    GOLD = 8
-    DIAMOND = 9
-    EMERALE = 10 
+    COAL = 7
+    IRON = 8
+    GOLD = 9
+    DIAMOND = 10
+    EMERALE = 11 
 
     # Tạo bản sao
     refined = [row[:] for row in matrix_2d]
