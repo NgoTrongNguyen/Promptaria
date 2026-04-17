@@ -343,7 +343,30 @@ function setupBlockBreaking() {
     }
   });
 }
+function mutateTerrainInDarkness(playerWorldX, playerWorldY, radius) {
+  for (let r = 0; r < MAP_ROWS; r++) {
+    for (let c = 0; c < MAP_COLS; c++) {
+      // Tọa độ tâm của Tile này trong thế giới thực (World Space)
+      const tx = c * T - 5*T;
+      const ty = r * T - 5*T;
 
+      // Tính khoảng cách dựa trên tọa độ World của người chơi
+      const dist = Math.hypot(tx - playerWorldX, ty - playerWorldY);
+
+      let tiles = [TILE_STONE, TILE_DIRT]
+      if (dist > radius) {
+        if (Math.random() < 0.004) {
+          if (tilemap[r][c] === TILE_AIR && Math.random() < 0.2)
+            tilemap[r][c] = tiles[Math.floor(Math.random() * tiles.length)];
+          if (tilemap[r][c] !== TILE_AIR)
+            tilemap[r][c] = tiles[Math.floor(Math.random() * tiles.length)];
+            if (Math.random() < 0.006)
+              tilemap[r][c] = TILE_AIR;
+        }
+      }
+    }
+  }
+}
 
 function drawLighting() {
   const px = player.x - camera.x + player.w / 2;
@@ -389,6 +412,7 @@ function loop() {
   drawHUD();
   setupBlockBreaking();
   drawLighting();
+  mutateTerrainInDarkness(camera.x, camera.y, 320);
   requestAnimationFrame(loop);
 }
 
