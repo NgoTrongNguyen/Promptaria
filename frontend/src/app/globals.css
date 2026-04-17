@@ -172,6 +172,13 @@ h1, h2, h3 {
 
 /* Structural Utilities */
 .w-full { width: 100%; }
+.w-8 { width: 2rem; }
+.w-10 { width: 2.5rem; }
+.w-12 { width: 3rem; }
+.h-8 { height: 2rem; }
+.h-10 { height: 2.5rem; }
+.h-12 { height: 3rem; }
+.shrink-0 { flex-shrink: 0; }
 .max-w-4xl { max-width: 56rem; }
 .min-h-screen { min-height: 100vh; }
 .rounded-md { border-radius: 0.375rem; }
@@ -211,3 +218,6 @@ h1, h2, h3 {
 .shadow-xl { box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1); }
 .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
 .transition-colors { transition-property: background-color, border-color, color, fill, stroke; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
+.transition-transform { transition-property: transform; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
+.hover\:scale-110:hover { transform: scale(1.1); }
+.hover\:scale-105:hover { transform: scale(1.05); }

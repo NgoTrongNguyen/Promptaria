@@ -24,7 +24,7 @@ export default function PixelCanvas({ width, height, data, onChange, scale = 20 
     if (!ctx) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
+
     // Draw Grid
     ctx.strokeStyle = '#334155';
     ctx.lineWidth = 0.5;
@@ -63,7 +63,7 @@ export default function PixelCanvas({ width, height, data, onChange, scale = 20 
       const newData = [...data];
       const index = y * width + x;
       const colorToApply = tool === 'pencil' ? selectedColor : 0;
-      
+
       if (newData[index] !== colorToApply) {
         newData[index] = colorToApply;
         onChange(newData);
@@ -89,14 +89,14 @@ export default function PixelCanvas({ width, height, data, onChange, scale = 20 
   return (
     <div className="flex flex-col gap-4 items-center glass-panel p-6">
       <div className="flex gap-4 items-center mb-4">
-        <div className="flex gap-1">
+        <div className="flex gap-2">
           {PIXEL_COLORS.map((color, i) => (
             i > 0 && (
               <button
                 key={i}
                 onClick={() => { setSelectedColor(i); setTool('pencil'); }}
                 style={{ backgroundColor: color }}
-                className={`w-8 h-8 rounded-md border-2 ${selectedColor === i && tool === 'pencil' ? 'border-white' : 'border-transparent'}`}
+                className={`w-10 h-10 shrink-0 rounded-md border-2 ${selectedColor === i && tool === 'pencil' ? 'border-white' : 'border-transparent'} transition-transform hover:scale-110`}
                 title={`Color ${i}`}
               />
             )
@@ -130,7 +130,7 @@ export default function PixelCanvas({ width, height, data, onChange, scale = 20 
           style={{ touchAction: 'none' }}
         />
       </div>
-      
+
       <div className="mt-2 text-slate-400 text-sm mono">
         {width}x{height} Grid
       </div>

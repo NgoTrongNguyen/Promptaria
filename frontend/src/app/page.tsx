@@ -21,7 +21,7 @@ export default function Home() {
     try {
       const { similarities } = await predictWeapon(weaponData, 16);
       const terrainData = await generateTerrain();
-      
+
       const baseStats = {
         melee: { hp: 100, atk: 15, spd: 5, range: 2 },
         ranged: { hp: 70, atk: 10, spd: 7, range: 10 },
@@ -54,7 +54,7 @@ export default function Home() {
       <div className="max-w-4xl w-full">
         <header className="mb-12 text-center">
           <h1 className="text-6xl font-extrabold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-500 tracking-tighter">
-            PIXEL FORGE ARENA
+            PROMPTARIA
           </h1>
           <p className="text-slate-400 text-lg">Weaponize your imagination with ML-driven stats</p>
         </header>
@@ -63,7 +63,7 @@ export default function Home() {
           <section className="flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-700">
             <h2 className="text-2xl font-bold mb-6 text-indigo-300">STEP 1: FORGE YOUR HERO</h2>
             <PixelCanvas width={32} height={32} data={characterData} onChange={setCharacterData} scale={12} />
-            <button 
+            <button
               onClick={() => setStep('weapon')}
               className="btn-primary mt-8 px-12"
             >
@@ -87,7 +87,7 @@ export default function Home() {
           <section className="flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-700 glass-panel p-12">
             <h2 className="text-2xl font-bold mb-8 text-indigo-300">STEP 3: CHOOSE YOUR PATH</h2>
             <div className="flex gap-8 mb-12">
-              <button 
+              <button
                 onClick={() => setSelectedClass('melee')}
                 className={`p-8 rounded-2xl border-2 transition-all ${selectedClass === 'melee' ? 'border-indigo-500 bg-indigo-500/10 shadow-[0_0_30px_rgba(99,102,241,0.2)]' : 'border-slate-800 hover:border-slate-700'}`}
               >
@@ -95,7 +95,7 @@ export default function Home() {
                 <div className="text-xl font-bold">MELEE</div>
                 <div className="text-slate-400 text-sm mt-2">High ATK & HP</div>
               </button>
-              <button 
+              <button
                 onClick={() => setSelectedClass('ranged')}
                 className={`p-8 rounded-2xl border-2 transition-all ${selectedClass === 'ranged' ? 'border-purple-500 bg-purple-500/10 shadow-[0_0_30px_rgba(168,85,247,0.2)]' : 'border-slate-800 hover:border-slate-700'}`}
               >
@@ -104,7 +104,7 @@ export default function Home() {
                 <div className="text-slate-400 text-sm mt-2">High SPD & RANGE</div>
               </button>
             </div>
-            <button 
+            <button
               disabled={loading}
               onClick={startGeneration}
               className="btn-primary px-16 py-4 text-xl"
@@ -118,7 +118,7 @@ export default function Home() {
           <section className="flex flex-col items-center animate-in fade-in zoom-in duration-700 glass-panel p-12">
             <h2 className="text-3xl font-black mb-1 text-emerald-400 uppercase tracking-widest">FORGING COMPLETE</h2>
             <div className="text-slate-500 mb-10">Analysis from Neural Network successfully processed</div>
-            
+
             <div className="grid grid-cols-2 gap-8 w-full mb-12">
               <div className="p-6 bg-slate-900/50 rounded-xl border border-slate-800">
                 <div className="text-slate-500 text-xs uppercase mb-1">Health Points</div>
@@ -144,13 +144,13 @@ export default function Home() {
 
         {step === 'game' && terrain && (
           <section className="animate-in fade-in duration-1000">
-            <GameCanvas 
+            <GameCanvas
               terrain={terrain}
               playerPixels={characterData}
               weaponPixels={weaponData}
               stats={stats}
             />
-            <button 
+            <button
               onClick={() => setStep('character')}
               className="mt-8 text-slate-500 hover:text-slate-300 underline underline-offset-4 text-sm"
             >
