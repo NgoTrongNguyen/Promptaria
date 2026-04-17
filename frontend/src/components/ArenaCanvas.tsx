@@ -11,13 +11,26 @@ interface GameStats {
   range: number;
 }
 
-interface Ghost {
+type MonsterType = 'ghost' | 'zombie';
+
+interface Monster {
+  id: string;
+  type: MonsterType;
   x: number;
   y: number;
   w: number;
   h: number;
   speed: number;
   hp: number;
+  maxHp: number;
+}
+
+interface Projectile {
+  x: number;
+  y: number;
+  vx: number;
+  distance: number;
+  active: boolean;
 }
 
 interface ArenaCanvasProps {
@@ -26,6 +39,7 @@ interface ArenaCanvasProps {
   weaponPixels: number[];
   stats: GameStats;
   hardMode?: boolean;
+  heroClass?: string;
 }
 
 const T = 32; // TILE_SIZE
@@ -33,13 +47,24 @@ const GRAVITY = 0.5;
 const JUMP_FORCE = -10;
 const MOVE_SPEED = 4;
 
-export default function ArenaCanvas({ terrain: initialTerrain, playerPixels, weaponPixels, stats, hardMode = false }: ArenaCanvasProps) {
+const PLAYER_SIZE = 32;
+const WEAPON_SIZE = 16;
+
+export default function ArenaCanvas({
+  terrain: initialTerrain,
+  playerPixels,
+  weaponPixels,
+  stats,
+  hardMode = false,
+  heroClass = 'melee'
+}: ArenaCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // High-frequency game state stored in Refs to prevent re-render loops
   const terrainRef = useRef<number[][]>(initialTerrain);
-  const ghostsRef = useRef<Ghost[]>([]);
+  const monstersRef = useRef<Monster[]>([]);
   const [playerHp, setPlayerHp] = useState(stats.hp);
+  const [kills, setKills] = useState({ ghost: 0 });
 
   const physics = useRef({
     px: 100,
@@ -48,8 +73,13 @@ export default function ArenaCanvas({ terrain: initialTerrain, playerPixels, wea
     pvy: 0,
     pOnGround: false,
     pFacing: 1,
-    walkFrame: 0
+    walkFrame: 0,
+    isAttacking: false,
+    attackTimer: 0,
+    attackCooldown: 0
   });
+
+  const projectilesRef = useRef<Projectile[]>([]);
 
   const keys = useRef<{ [key: string]: boolean }>({});
   const camera = useRef({ x: 0, y: 0 });
@@ -62,29 +92,54 @@ export default function ArenaCanvas({ terrain: initialTerrain, playerPixels, wea
   }, [initialTerrain]);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => { keys.current[e.code] = true; };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+        e.preventDefault();
+      }
+      keys.current[e.code] = true;
+    };
     const handleKeyUp = (e: KeyboardEvent) => { keys.current[e.code] = false; };
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
 
-    const spawnTimer = setInterval(() => {
-      if (hardMode) {
-        if (ghostsRef.current.length < 5) {
-          ghostsRef.current.push({
-            x: Math.random() * (terrainRef.current[0].length * T),
-            y: Math.random() * (terrainRef.current.length * T),
-            w: 22, h: 30, speed: 1.0 + Math.random(), hp: 10
-          });
-        }
+    // Initial spawn
+    const spawnInitial = () => {
+      const MAP_W = terrainRef.current[0].length;
+      const MAP_H = terrainRef.current.length;
+      for (let i = 0; i < 3; i++) {
+        monstersRef.current.push({
+          id: Math.random().toString(36).substr(2, 9),
+          type: 'ghost',
+          x: Math.random() * (MAP_W * T),
+          y: Math.random() * (MAP_H * T),
+          w: 22, h: 30, speed: 1.0 + Math.random(),
+          hp: 10, maxHp: 10
+        });
       }
-    }, 5000);
+    };
+    spawnInitial();
+
+    const spawnTimer = setInterval(() => {
+      if (monstersRef.current.length < 5) {
+        const MAP_W = terrainRef.current[0].length;
+        const MAP_H = terrainRef.current.length;
+        monstersRef.current.push({
+          id: Math.random().toString(36).substr(2, 9),
+          type: 'ghost',
+          x: Math.random() * (MAP_W * T),
+          y: Math.random() * (MAP_H * T),
+          w: 22, h: 30, speed: 1.0 + Math.random(),
+          hp: 10, maxHp: 10
+        });
+      }
+    }, 3000);
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
       clearInterval(spawnTimer);
     };
-  }, [hardMode]);
+  }, []); // Remove hardMode dependency to always spawn ghosts
 
   useEffect(() => {
     const gameCanvas = canvasRef.current;
@@ -101,15 +156,73 @@ export default function ArenaCanvas({ terrain: initialTerrain, playerPixels, wea
     };
 
     const update = () => {
-      let { px, py, pvx, pvy, pOnGround, pFacing, walkFrame } = physics.current;
+      let { px, py, pvx, pvy, pOnGround, pFacing, walkFrame, isAttacking, attackTimer, attackCooldown } = physics.current;
+
+      // Attack Trigger
+      if (keys.current['Space'] && attackCooldown <= 0) {
+        isAttacking = true;
+        attackTimer = 0;
+        attackCooldown = 30; // 0.5s cooldown at 60fps
+
+        if (heroClass === 'ranged') {
+          projectilesRef.current.push({
+            x: px + 16,
+            y: py + 16,
+            vx: pFacing * 8,
+            distance: 0,
+            active: true
+          });
+        }
+      }
+
+      if (isAttacking) {
+        attackTimer++;
+        if (attackTimer > 20) isAttacking = false;
+
+        // Melee collision in hit frames
+        if (heroClass === 'melee' && attackTimer > 5 && attackTimer < 15) {
+          const hitbox = {
+            x: px + 16 + (pFacing > 0 ? 0 : -48),
+            y: py,
+            w: 48,
+            h: 32
+          };
+          monstersRef.current.forEach(monster => {
+            if (monster.x < hitbox.x + hitbox.w && monster.x + monster.w > hitbox.x &&
+                monster.y < hitbox.y + hitbox.h && monster.y + monster.h > hitbox.y) {
+              monster.hp -= stats.atk * 0.1; // Do damage over hit frames
+            }
+          });
+        }
+      }
+      if (attackCooldown > 0) attackCooldown--;
+
+      // Projectile Update
+      projectilesRef.current = projectilesRef.current.filter(p => p.active);
+      projectilesRef.current.forEach(p => {
+        p.x += p.vx;
+        p.distance += Math.abs(p.vx);
+        if (p.distance > PLAYER_SIZE * 3) p.active = false;
+        
+        // Monster collision
+        monstersRef.current.forEach(monster => {
+          if (p.x > monster.x && p.x < monster.x + monster.w &&
+              p.y > monster.y && p.y < monster.y + monster.h) {
+            monster.hp -= stats.atk;
+            p.active = false;
+          }
+        });
+      });
+
 
       // Movement
-      const currentSpeed = MOVE_SPEED * (stats.spd / 5);
-      if (keys.current['KeyA'] || keys.current['ArrowLeft']) {
+      const currentSpeed = MOVE_SPEED * (stats.spd / 10);
+
+      if (keys.current['ArrowLeft']) {
         pvx = -currentSpeed;
         pFacing = -1;
         walkFrame++;
-      } else if (keys.current['KeyD'] || keys.current['ArrowRight']) {
+      } else if (keys.current['ArrowRight']) {
         pvx = currentSpeed;
         pFacing = 1;
         walkFrame++;
@@ -117,7 +230,9 @@ export default function ArenaCanvas({ terrain: initialTerrain, playerPixels, wea
         pvx *= 0.8;
       }
 
-      if ((keys.current['KeyW'] || keys.current['Space'] || keys.current['ArrowUp']) && pOnGround) {
+      // Debug: Currently use Space for attack
+      // -> Temporarily not using Space for jump
+      if ((keys.current['ArrowUp']) && pOnGround) {
         pvy = JUMP_FORCE;
         pOnGround = false;
       }
@@ -168,19 +283,38 @@ export default function ArenaCanvas({ terrain: initialTerrain, playerPixels, wea
       camera.current.x = Math.max(0, Math.min(MAP_W * T - gameCanvas.width, camera.current.x));
       camera.current.y = Math.max(0, Math.min(MAP_H * T - gameCanvas.height, camera.current.y));
 
-      // Ghost Update
-      if (hardMode) {
-        ghostsRef.current.forEach(ghost => {
-          const dx = px - ghost.x;
-          const dy = py - ghost.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 400) {
-            if (dist < 20) setPlayerHp(h => Math.max(0, h - 0.2));
-            ghost.x += (dx / dist) * ghost.speed;
-            ghost.y += (dy / dist) * ghost.speed;
-          }
-        });
+      // Monster Update
+      monstersRef.current.forEach(monster => {
+        const dx = px - monster.x;
+        const dy = py - monster.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 400) {
+          if (dist < 20) setPlayerHp(h => Math.max(0, h - 0.2));
+          monster.x += (dx / dist) * monster.speed;
+          monster.y += (dy / dist) * monster.speed;
+        }
+      });
 
+      // Maintain MIN_MONSTER_NUM (3)
+      if (monstersRef.current.length < 3) {
+        monstersRef.current.push({
+          id: Math.random().toString(36).substr(2, 9),
+          type: 'ghost',
+          x: Math.random() < 0.5 ? 0 : MAP_W * T,
+          y: Math.random() < 0.5 ? 0 : MAP_H * T,
+          w: 22, h: 30, speed: 1.0 + Math.random(),
+          hp: 10, maxHp: 10
+        });
+      }
+
+      // Cleanup & Quest Logic
+      const initialCount = monstersRef.current.length;
+      monstersRef.current = monstersRef.current.filter(m => m.hp > 0);
+      if (monstersRef.current.length < initialCount) {
+        setKills(prev => ({ ...prev, ghost: prev.ghost + (initialCount - monstersRef.current.length) }));
+      }
+
+      if (hardMode) {
         // Terrain Mutation in Darkness
         if (Math.random() < 0.01) {
           const r = Math.floor(Math.random() * MAP_H);
@@ -193,7 +327,7 @@ export default function ArenaCanvas({ terrain: initialTerrain, playerPixels, wea
         }
       }
 
-      physics.current = { px, py, pvx, pvy, pOnGround, pFacing, walkFrame };
+      physics.current = { px, py, pvx, pvy, pOnGround, pFacing, walkFrame, isAttacking, attackTimer, attackCooldown };
     };
 
     const handleMouseMove = async (e: MouseEvent) => {
@@ -273,46 +407,77 @@ export default function ArenaCanvas({ terrain: initialTerrain, playerPixels, wea
 
     const drawEntities = () => {
       const { x: camX, y: camY } = camera.current;
-      const { px, py, pFacing } = physics.current;
+      const { px, py, pFacing, isAttacking, attackTimer } = physics.current;
 
       ctx.save();
       ctx.translate(px + 16 - camX, py + 16 - camY);
       ctx.scale(pFacing, 1);
-      playerPixels.forEach((colorIdx, i) => {
+      playerPixels.forEach((colorIdx: number, i: number) => {
         if (colorIdx === 0) return;
         ctx.fillStyle = PIXEL_COLORS[colorIdx];
-        ctx.fillRect((i % 32) - 16, Math.floor(i / 32) - 16, 1, 1);
+        ctx.fillRect((i % PLAYER_SIZE) - PLAYER_SIZE / 2, Math.floor(i / PLAYER_SIZE) - PLAYER_SIZE / 2, 2, 2);
       });
+
+      // Weapon
       ctx.save();
-      ctx.translate(8, 0);
-      weaponPixels.forEach((colorIdx, i) => {
+      ctx.translate(8, 0); // Position of hand/weapon pivot
+      if (isAttacking && heroClass === 'melee') {
+        const swingArc = (attackTimer / 20) * Math.PI * 0.8; // Rotate up to 144 degrees
+        ctx.rotate(swingArc);
+      }
+      weaponPixels.forEach((colorIdx: number, i: number) => {
         if (colorIdx === 0) return;
         ctx.fillStyle = PIXEL_COLORS[colorIdx];
-        ctx.fillRect((i % 16) - 8, Math.floor(i / 16) - 8, 1, 1);
+        ctx.fillRect((i % WEAPON_SIZE) - WEAPON_SIZE / 2, Math.floor(i / WEAPON_SIZE) - WEAPON_SIZE / 2, 2, 2);
       });
       ctx.restore();
       ctx.restore();
 
-      if (hardMode) {
-        ghostsRef.current.forEach(ghost => {
-          const gx = ghost.x - camX + ghost.w / 2;
-          const gy = ghost.y - camY + ghost.h / 2;
+      // Projectiles
+      projectilesRef.current.forEach(p => {
+        ctx.save();
+        ctx.translate(p.x - camX, p.y - camY);
+        ctx.fillStyle = '#fff';
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#0ff';
+        ctx.fillRect(-2, -2, 4, 4);
+        ctx.restore();
+      });
+
+      // Monsters Rendering
+      monstersRef.current.forEach(monster => {
+        const gx = monster.x - camX + monster.w / 2;
+        const gy = monster.y - camY + monster.h / 2;
+        
+        // Red Health Bar
+        if (monster.hp < monster.maxHp) {
+          const barW = monster.w;
+          const barH = 4;
+          const barX = monster.x - camX;
+          const barY = monster.y - camY - 8;
+          ctx.fillStyle = '#333';
+          ctx.fillRect(barX, barY, barW, barH);
+          ctx.fillStyle = '#ef4444'; // Red
+          ctx.fillRect(barX, barY, barW * (monster.hp / monster.maxHp), barH);
+        }
+
+        if (monster.type === 'ghost') {
           ctx.save();
           ctx.shadowBlur = 15;
           ctx.shadowColor = 'rgba(200, 230, 255, 0.5)';
           ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
           ctx.beginPath();
-          ctx.arc(gx, gy - 5, ghost.w / 2, Math.PI, 0);
-          ctx.lineTo(gx + ghost.w / 2, gy + ghost.h / 2);
-          ctx.lineTo(gx - ghost.w / 2, gy + ghost.h / 2);
+          ctx.arc(gx, gy - 5, monster.w / 2, Math.PI, 0);
+          ctx.lineTo(gx + monster.w / 2, gy + monster.h / 2);
+          ctx.lineTo(gx - monster.w / 2, gy + monster.h / 2);
           ctx.closePath();
           ctx.fill();
           ctx.fillStyle = '#000';
           ctx.beginPath(); ctx.arc(gx - 4, gy - 7, 2, 0, Math.PI * 2); ctx.fill();
           ctx.beginPath(); ctx.arc(gx + 4, gy - 7, 2, 0, Math.PI * 2); ctx.fill();
           ctx.restore();
-        });
-      }
+        }
+      });
     };
 
     const drawLighting = () => {
@@ -343,9 +508,9 @@ export default function ArenaCanvas({ terrain: initialTerrain, playerPixels, wea
 
     return () => {
       cancelAnimationFrame(frameId);
-      // // gameCanvas.removeEventListener('mousemove', handleMouseMove);
+      // gameCanvas.removeEventListener('mousemove', handleMouseMove);
     };
-  }, [playerPixels, weaponPixels, stats, hardMode]);
+  }, [playerPixels, weaponPixels, stats, hardMode, heroClass]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const interactionCanvas = canvasRef.current;
@@ -380,6 +545,19 @@ export default function ArenaCanvas({ terrain: initialTerrain, playerPixels, wea
         </div>
       </div>
       <div className={`border-8 rounded-2xl overflow-hidden shadow-2xl relative ${hardMode ? 'border-slate-900 shadow-red-900/20' : 'border-slate-800 shadow-indigo-900/20'}`}>
+        {/* Quest Tracker Overlay */}
+        <div className="absolute top-6 left-6 z-10 flex flex-col gap-2 pointer-events-none">
+          <div className="glass-panel py-2 px-4 border-l-4 border-amber-500 animate-in slide-in-from-left duration-500">
+            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Active Tasks</h3>
+            <div className="flex items-center gap-3">
+              <div className={`w-2 h-2 rounded-full ${kills.ghost >= 5 ? 'bg-emerald-500 shadow-[0_0_8px_theme(colors.emerald.500)]' : 'bg-slate-600'}`} />
+              <span className={`mono text-xs font-bold ${kills.ghost >= 5 ? 'text-emerald-400 line-through opacity-50' : 'text-slate-200'}`}>
+                Ghost {kills.ghost}/5
+              </span>
+            </div>
+          </div>
+        </div>
+
         <canvas
           ref={canvasRef}
           width={800}

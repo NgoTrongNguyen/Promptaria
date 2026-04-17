@@ -146,14 +146,14 @@ export default function Home() {
                   onClick={() => setDifficulty('easy')}
                   className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center ${difficulty === 'easy' ? 'border-emerald-500 bg-emerald-500/10' : 'border-slate-800 hover:border-slate-700'}`}
                 >
-                  <span className="text-xl font-bold text-emerald-400">EASY</span>
+                  <span className={`text-xl font-bold ${difficulty === 'easy' ? 'text-blue-500' : 'text-slate-500'}`}>EASY</span>
                   <span className="text-xs text-slate-500">Classic Adventure</span>
                 </button>
                 <button
                   onClick={() => setDifficulty('hard')}
                   className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center ${difficulty === 'hard' ? 'border-red-500 bg-red-500/10' : 'border-slate-800 hover:border-slate-700'}`}
                 >
-                  <span className="text-xl font-bold text-red-500">HARD</span>
+                  <span className={`text-xl font-bold ${difficulty === 'hard' ? 'text-red-500' : 'text-slate-500'}`}>HARD</span>
                   <span className="text-xs text-slate-500">Survival & Lighting</span>
                 </button>
               </div>
@@ -171,6 +171,7 @@ export default function Home() {
               weaponPixels={weaponData}
               stats={stats}
               hardMode={difficulty === 'hard'}
+              heroClass={selectedClass}
             />
             <button
               onClick={() => setStep('character')}
