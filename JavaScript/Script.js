@@ -2,6 +2,7 @@ import { MouseMoving } from './Mouse/Mouse.js';
 import { CallAPI } from './CallAPI/API.js';
 import { Player } from './Player/Player.js';
 import { Camera } from './Camera/Camera.js';
+import { Ghost } from './Monster/Monster.js';
 
 
 function generateMatrix() {
@@ -274,6 +275,9 @@ function drawHUD() {
   ctx.fill();
   ctx.fillStyle = '#f5c842';
   ctx.font = '11px monospace';
+  ctx.fillText('Hp: ' + Math.floor(player.hp), 22, 35);
+  ctx.fillStyle = '#f5c842';
+  ctx.font = '11px monospace';
   ctx.fillText('Goal: Iron - ' + iron + '/5, Gold - ' + gold + '/5, Diamond - ' + diamond + '/5', 22, 65);
   const col = Math.floor(player.x / T);
   const row = Math.floor(player.y / T);
@@ -395,6 +399,68 @@ function drawLighting() {
 }
 
 
+let ghosts = [];
+function spawnGhost() {
+  const x = Math.random() * MAP_COLS * T;
+  const y = Math.random() * MAP_ROWS * T;
+  ghosts.push(new Ghost(x, y));
+}
+
+function drawGhosts(camX, camY) {
+  ghosts.forEach(ghost => {
+    // 1. Tính toán vị trí hiển thị trên màn hình
+    const gx = ghost.x - camX + ghost.w / 2;
+    const gy = ghost.y - camY + ghost.h / 2;
+
+    ctx.save(); // Lưu trạng thái canvas
+
+    // 2. Tạo hiệu ứng phát sáng (Glow)
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = 'rgba(200, 230, 255, 0.5)';
+    
+    // 3. Vẽ thân ma (Hình giọt nước ngược hoặc elip)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'; // Trong suốt một chút
+    ctx.beginPath();
+    // Vẽ đầu tròn
+    ctx.arc(gx, gy, ghost.w / 2, Math.PI, 0); 
+    // Vẽ thân dưới hơi loe ra hoặc răng cưa
+    ctx.lineTo(gx + ghost.w / 2, gy + ghost.h / 2);
+    ctx.lineTo(gx - ghost.w / 2, gy + ghost.h / 2);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#000';
+    const eyeSize = ghost.w / 8;
+    const eyeOffset = ghost.w / 4;
+    
+    // Mắt trái
+    ctx.beginPath();
+    ctx.arc(gx - eyeOffset/1.5, gy - 2, eyeSize, 0, Math.PI * 2);
+    ctx.fill();
+    // Mắt phải
+    ctx.beginPath();
+    ctx.arc(gx + eyeOffset/1.5, gy - 2, eyeSize, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore(); // Khôi phục trạng thái (để không làm mờ các vật thể khác)
+  });
+}
+
+function updateGhosts() {
+  ghosts.forEach(ghost => {
+    const dx = player.x - ghost.x;
+    const dy = player.y - ghost.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist > 0) {
+      ghost.x += (dx / dist) * ghost.speed;
+      ghost.y += (dy / dist) * ghost.speed;
+    }
+
+    if (Math.abs(ghost.x - player.x) < 2 && Math.abs(ghost.y - player.y) < 2) {
+      player.hp -= 0.05; 
+    }
+  });
+}
 
 
 
@@ -405,25 +471,31 @@ function loop() {
             tilemap = data.result;
             });
             player.x = (MAP_COLS * T) / 2 - player.w / 2;
-            player.y = (MAP_ROWS * T) / 2 - player.h / 2;
+            player.y = (MAP_ROWS * T) / 2 - player.h / 2 + 48;
             player.vx = 0;
             player.vy = 0;
 
-            camera.x = player.x - canvas.width / 2;
-            camera.y = player.y - canvas.height / 2;
+            targetx = player.x - canvas.width / 2;
+            targety = player.y - canvas.height / 2 + 48;
+
+            camera.x = (targetx - camera.x)*0.05;
+            camera.y = (targety - camera.y)*0.05;
         };
     });
   update();
+  updateGhosts();
   drawSky();
   drawTilemap(camera.x, camera.y);
   drawPlayer(camera.x, camera.y);
-  setupBlockBreaking();
+  drawGhosts(camera.x, camera.y);
   drawLighting();
   mutateTerrainInDarkness(camera.x, camera.y, 320);
   drawHUD();
   requestAnimationFrame(loop);
 }
 
+spawnGhost();
+setupBlockBreaking();
 canvas.setAttribute('tabindex', '0');
 canvas.focus();
 loop();

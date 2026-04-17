@@ -6,6 +6,7 @@ export class Player {
         this.vy = 0;
         this.w = 22;
         this.h = 30;
+        this.hp = 100;
         this.onGround = false;
         this.facing = 1;
         this.walkFrame = 0;

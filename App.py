@@ -193,7 +193,7 @@ def refine_terrain(matrix_2d):
                     refined[r][c] = DIRT if rand < 0.8 else STONE
                 else:
                     if rand < 0.05: # 5% xác suất có quặng
-                        refined[r][c] =random.randint(6,10)
+                        refined[r][c] =random.randint(7,11)
                     else:
                         refined[r][c] = STONE
 
