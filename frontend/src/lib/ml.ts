@@ -25,11 +25,11 @@ export async function predictWeapon(pixels: number[], size: number): Promise<Pre
   return response.json();
 }
 
-export async function generateTerrain(): Promise<TerrainResponse> {
+export async function generateTerrain(matrix: number[] = new Array(8).fill(0)): Promise<TerrainResponse> {
   const response = await fetch(`${API_BASE}/process`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ Matrix: 'generate' }),
+    body: JSON.stringify({ Matrix: matrix }),
   });
   
   if (!response.ok) {

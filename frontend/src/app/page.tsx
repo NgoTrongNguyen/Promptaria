@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import PixelCanvas from '@/components/PixelCanvas';
-import GameCanvas from '@/components/GameCanvas';
+import ArenaCanvas from '@/components/ArenaCanvas';
 import { predictWeapon, generateTerrain } from '@/lib/ml';
 
 type Step = 'character' | 'weapon' | 'class' | 'stats' | 'game';
@@ -15,6 +15,7 @@ export default function Home() {
   const [stats, setStats] = useState({ hp: 100, atk: 10, spd: 5, range: 5 });
   const [terrain, setTerrain] = useState<number[][] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [difficulty, setDifficulty] = useState<'easy' | 'hard'>('easy');
 
   const startGeneration = async () => {
     setLoading(true);
@@ -138,17 +139,38 @@ export default function Home() {
               </div>
             </div>
 
+            <div className="w-full mb-12">
+              <div className="text-slate-500 text-xs uppercase mb-4 text-center tracking-widest">Select Challenge Level</div>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => setDifficulty('easy')}
+                  className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center ${difficulty === 'easy' ? 'border-emerald-500 bg-emerald-500/10' : 'border-slate-800 hover:border-slate-700'}`}
+                >
+                  <span className="text-xl font-bold text-emerald-400">EASY</span>
+                  <span className="text-xs text-slate-500">Classic Adventure</span>
+                </button>
+                <button
+                  onClick={() => setDifficulty('hard')}
+                  className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center ${difficulty === 'hard' ? 'border-red-500 bg-red-500/10' : 'border-slate-800 hover:border-slate-700'}`}
+                >
+                  <span className="text-xl font-bold text-red-500">HARD</span>
+                  <span className="text-xs text-slate-500">Survival & Lighting</span>
+                </button>
+              </div>
+            </div>
+
             <button onClick={() => setStep('game')} className="btn-primary w-full py-5 text-2xl tracking-tighter">START BATTLE</button>
           </section>
         )}
 
         {step === 'game' && terrain && (
           <section className="animate-in fade-in duration-1000">
-            <GameCanvas
+            <ArenaCanvas
               terrain={terrain}
               playerPixels={characterData}
               weaponPixels={weaponData}
               stats={stats}
+              hardMode={difficulty === 'hard'}
             />
             <button
               onClick={() => setStep('character')}
