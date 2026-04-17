@@ -33,9 +33,7 @@ function getTileAt(row, col) {
     if (lastTile.r !== row || lastTile.c !== col) {
       if (lastTile.r +4  <= row || lastTile.r -4 >= row || lastTile.c +2 <= col || lastTile.c -2 >= col) {
         lastTile = { r: row, c: col };
-        console.log('Tile at [' + row + '][' + col + ']:', lastTile);
         getSurroundingMatrix(lastTile.r, lastTile.c);
-        console.log('Surrounding tiles:', surroundingMatrix);
       }
     }
 }
@@ -306,6 +304,57 @@ function update() {
   camera.y = Math.max(0, Math.min(MAP_ROWS * T - canvas.height, camera.y));
 }
 
+function setupBlockBreaking() {
+  canvas.addEventListener('mousedown', e => {
+    const rect = canvas.getBoundingClientRect();
+    
+    // 2. Tính tỉ lệ giữa tọa độ nội bộ của canvas và kích thước hiển thị CSS
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    const localX = (e.clientX - rect.left) * scaleX;
+    const localY = (e.clientY - rect.top) * scaleY;
+
+    // Cộng thêm offset camera để ra tọa độ thực trong map
+    const worldX = localX + camera.x;
+    const worldY = localY + camera.y;
+
+    // Quy đổi sang hàng–cột trong tilemap
+    const c = Math.floor(worldX / T);
+    const r = Math.floor(worldY / T);
+
+    // Kiểm tra trong phạm vi bản đồ
+    if (r >= 0 && r < MAP_ROWS && c >= 0 && c < MAP_COLS) {
+      if (isSolid(r, c)) {
+        tilemap[r][c] = TILE_AIR; 
+      }
+    }
+  });
+}
+
+
+function drawLighting() {
+  const px = player.x - camera.x + player.w / 2;
+  const py = player.y - camera.y + player.h / 2;
+
+  // bán kính vùng sáng
+  const innerRadius = 40;   // vùng sáng rõ
+  const outerRadius = 120;  // vùng sáng mờ dần
+
+  // tạo gradient tròn
+  const gradient = ctx.createRadialGradient(px, py, innerRadius, px, py, outerRadius);
+  gradient.addColorStop(0, 'rgba(0,0,0,0)');       // trung tâm sáng
+  gradient.addColorStop(1, 'rgba(0,0,0,0.95)');    // ngoài tối
+
+  // phủ gradient lên toàn canvas
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+
+
+
+
 function loop() {
     MouseMoving(canvas, T, (check) => {
     if (check === 1) {
@@ -326,6 +375,8 @@ function loop() {
   drawTilemap(camera.x, camera.y);
   drawPlayer(camera.x, camera.y);
   drawHUD();
+  setupBlockBreaking();
+  drawLighting();
   requestAnimationFrame(loop);
 }
 

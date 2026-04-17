@@ -14,7 +14,7 @@ export function MouseMoving(canvas, tileSize, callback) {
         const gridX = Math.floor(mouseX / tileSize);
         const gridY = Math.floor(mouseY / tileSize);
 
-        if (Math.abs(gridX - State.lastGrid.x) >3 || Math.abs( gridY - State.lastGrid.y)>3) {
+        if (Math.abs(gridX - State.lastGrid.x) >7 || Math.abs( gridY - State.lastGrid.y)>7) {
             State.lastGrid = { x: gridX, y: gridY };
             console.log(`Mouse moved to Grid: (${gridX}, ${gridY})`);
             check = 1; 
