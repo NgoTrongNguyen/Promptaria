@@ -264,6 +264,9 @@ function drawSky() {
   });
 }
 
+let iron = 0;
+let gold = 0;
+let diamond = 0;
 function drawHUD() {
   ctx.fillStyle = 'rgba(0,0,0,0.55)';
   ctx.beginPath();
@@ -271,10 +274,12 @@ function drawHUD() {
   ctx.fill();
   ctx.fillStyle = '#f5c842';
   ctx.font = '11px monospace';
+  ctx.fillText('Goal: Iron - ' + iron + '/5, Gold - ' + gold + '/5, Diamond - ' + diamond + '/5', 22, 65);
   const col = Math.floor(player.x / T);
   const row = Math.floor(player.y / T);
   getTileAt(row, col);
-  ctx.fillText('tile [' + row + '][' + col + ']  |  x:' + Math.round(player.x) + ' y:' + Math.round(player.y), 22, 50);
+  ctx.fillText('x:' + Math.round(player.x) + ' y:' + Math.round(player.y), 22, 50);
+  
 }
 
 let time = 0;
@@ -338,6 +343,9 @@ function setupBlockBreaking() {
     // Kiểm tra trong phạm vi bản đồ
     if (r >= 0 && r < MAP_ROWS && c >= 0 && c < MAP_COLS) {
       if (isSolid(r, c)) {
+        if (tilemap[r][c] === TILE_IRON) iron++;
+        if (tilemap[r][c] === TILE_GOLD) gold++;
+        if (tilemap[r][c] === TILE_DIAM) diamond++;
         tilemap[r][c] = TILE_AIR; 
       }
     }
@@ -373,7 +381,7 @@ function drawLighting() {
   const py = player.y - camera.y + player.h / 2;
 
   // bán kính vùng sáng
-  const innerRadius = 40;   // vùng sáng rõ
+  const innerRadius = 50;   // vùng sáng rõ
   const outerRadius = 120;  // vùng sáng mờ dần
 
   // tạo gradient tròn
@@ -409,10 +417,10 @@ function loop() {
   drawSky();
   drawTilemap(camera.x, camera.y);
   drawPlayer(camera.x, camera.y);
-  drawHUD();
   setupBlockBreaking();
   drawLighting();
   mutateTerrainInDarkness(camera.x, camera.y, 320);
+  drawHUD();
   requestAnimationFrame(loop);
 }
 
