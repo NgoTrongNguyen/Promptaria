@@ -72,9 +72,9 @@ const TILE_AIR   = 0;
 const TILE_GRASS = 1;
 const TILE_DIRT  = 2;
 const TILE_STONE = 3;
-const TILE_DEEP  = 4;
-const TILE_COIN  = 5;
-const TILE_PLATF = 6;
+const TILE_WOOD  = 4;
+const TILE_LEAVES  = 5;
+
 const TILE_COAL  = 7;
 const TILE_IRON  = 8;
 const TILE_GOLD  = 9;
@@ -83,6 +83,19 @@ const TILE_EMER  = 11;
 
 const MAP_COLS = 64;
 const MAP_ROWS = 64;
+
+const SOLID_TILES = new Set([
+  TILE_GRASS,
+  TILE_DIRT,
+  TILE_STONE,
+  TILE_WOOD,
+  TILE_LEAVES,
+  TILE_COAL,  
+  TILE_IRON,  
+  TILE_GOLD,  
+  TILE_DIAM, 
+  TILE_EMER, 
+]);
 
 
 // sinh dia hinh theo height map
@@ -97,8 +110,7 @@ for (let c = 0; c < MAP_COLS; c++) {
 
 function isSolid(r, c) {
   if (r < 0 || r >= MAP_ROWS || c < 0 || c >= MAP_COLS) return false;
-  const t = tilemap[r][c];
-  return t === TILE_GRASS || t === TILE_DIRT || t === TILE_STONE || t === TILE_DEEP || t === TILE_PLATF;
+  return SOLID_TILES.has(tilemap[r][c]);
 }
 
 // mau sac tile
@@ -106,8 +118,8 @@ const TILE_COLORS = {
   [TILE_GRASS]: '#4a9e2f',
   [TILE_DIRT]:  '#7a4f28',
   [TILE_STONE]: '#6b6b6b',
-  [TILE_DEEP]:  '#3a3a3a',
-  [TILE_PLATF]: '#8B6914',
+  [TILE_WOOD]:  '#8b5a2b',
+  [TILE_LEAVES]: '#2e8b57',
   [TILE_COAL]:  '#5a5a5a',
   [TILE_IRON]:  '#808080',
   [TILE_GOLD]:  '#ffd700',
@@ -122,8 +134,8 @@ const TILE_SHADE = {
   [TILE_GRASS]: '#3a7d24',
   [TILE_DIRT]:  '#5c3d1e',
   [TILE_STONE]: '#505050',
-  [TILE_DEEP]:  '#2a2a2a',
-  [TILE_PLATF]: '#6a4e10',
+  [TILE_WOOD]:  '#5c3a1e',
+  [TILE_LEAVES]: '#1f5d3a',
   [TILE_COAL]:  '#4a4a4a',
   [TILE_IRON]:  '#707070',
   [TILE_GOLD]:  '#bfa000',
