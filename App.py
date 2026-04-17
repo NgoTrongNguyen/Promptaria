@@ -200,6 +200,18 @@ def refine_terrain(matrix_2d):
     # Chuyển list of lists về dạng list of tensors như bạn yêu cầu
     return torch.stack([torch.tensor(row) for row in refined])
 
+def refine_matrix(matrix_2d, row, col, target):
+    matrix_2d[:]
+    i = 0
+    for r in range(row -1, row + 2):
+        for c in range(col -1, col + 2):
+            matrix_2d[r][c] = target[i]
+            i += 1
+            if i == 4:
+                matrix_2d[r][c] = 0
+                i -= 1
+    return matrix_2d
+
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -214,7 +226,7 @@ app.add_middleware(
 model = load_terrain_model("C:\\VSCode Project\\Promptaria\\terrain_gen20.pth")
 
 class InputData(BaseModel):
-    Matrix: str
+    Matrix: list
 
 @app.get("/")
 def read_root():
@@ -228,4 +240,5 @@ def process_signal(data: InputData):
         predicted = model(dummy_input)
         final_map = (predicted > 0.5).float()
         refined_map = refine_terrain(final_map.squeeze())
+        refined_map = refine_matrix(refined_map, 32, 32, data.Matrix)
     return {"result": refined_map.tolist()}

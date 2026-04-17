@@ -27,6 +27,40 @@ function generateMatrix() {
 
 let tilemap = generateMatrix();
 
+let lastTile = { r: -1, c: -1};
+function getTileAt(row, col) {
+    if (row < 0 || row >= MAP_ROWS || col < 0 || col >= MAP_COLS) return null;
+    if (lastTile.r !== row || lastTile.c !== col) {
+      if (lastTile.r +4  <= row || lastTile.r -4 >= row || lastTile.c +2 <= col || lastTile.c -2 >= col) {
+        lastTile = { r: row, c: col };
+        console.log('Tile at [' + row + '][' + col + ']:', lastTile);
+        getSurroundingMatrix(lastTile.r, lastTile.c);
+        console.log('Surrounding tiles:', surroundingMatrix);
+      }
+    }
+}
+
+function getSurroundingTiles(row, col) {
+    let surroundingTiles = [];
+    for (let r = Math.max(0, row - 1); r <= Math.min(MAP_ROWS - 1, row + 1); r++) {
+        for (let c = Math.max(0, col - 1); c <= Math.min(MAP_COLS - 1, col + 1); c++) {
+            if (r !== row || c !== col) {
+                surroundingTiles.push({ r, c });
+            }
+        }
+    }
+    return surroundingTiles;
+}
+
+let surroundingMatrix = [];
+function getSurroundingMatrix(row, col){
+  surroundingMatrix = []; 
+  let surroundingTiles = getSurroundingTiles(row, col);
+  surroundingTiles.forEach((tiles) => {
+    surroundingMatrix.push(tilemap[tiles.r][tiles.c]);
+  });
+}
+
 const canvas = document.getElementById('gc');
 const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
@@ -229,6 +263,7 @@ function drawHUD() {
   ctx.font = '11px monospace';
   const col = Math.floor(player.x / T);
   const row = Math.floor(player.y / T);
+  getTileAt(row, col);
   ctx.fillText('tile [' + row + '][' + col + ']  |  x:' + Math.round(player.x) + ' y:' + Math.round(player.y), 22, 50);
 }
 
@@ -274,9 +309,16 @@ function update() {
 function loop() {
     MouseMoving(canvas, T, (check) => {
     if (check === 1) {
-        CallAPI().then(data => {
+        CallAPI(surroundingMatrix).then(data => {
             tilemap = data.result;
             });
+            player.x = (MAP_COLS * T) / 2 - player.w / 2;
+            player.y = (MAP_ROWS * T) / 2 - player.h / 2;
+            player.vx = 0;
+            player.vy = 0;
+
+            camera.x = player.x - canvas.width / 2;
+            camera.y = player.y - canvas.height / 2;
         };
     });
   update();
