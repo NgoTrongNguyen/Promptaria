@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PROMPTARIA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+/* ── Reset & Root ── */
+*{box-sizing:border-box;padding:0;margin:0}
+:root{
+  --bg:#0d0f14;
+  --panel-bg:rgba(17,21,28,0.85);
+  --border:rgba(255,255,255,0.08);
+  --accent:#6366f1;
+  --accent2:#a855f7;
+  --text:#f8fafc;
+  --muted:#94a3b8;
+  --dim:#64748b;
+  --success:#22c55e;
+  --danger:#ef4444;
+}
+body{
+  background-color:var(--bg);
+  background-image:
+    radial-gradient(at 0% 0%, rgba(99,102,241,0.15) 0, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(168,85,247,0.15) 0, transparent 50%);
+  color:var(--text);
+  font-family:'Outfit',sans-serif;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  overflow-x:hidden;
+}
+
+/* ── Glass Panel ── */
+.glass{
+  background:var(--panel-bg);
+  backdrop-filter:blur(12px);
+  border:1px solid var(--border);
+  border-radius:16px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.4);
+}
+
+/* ── Buttons ── */
+.btn-primary{
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border:none;color:#fff;
+  padding:12px 28px;border-radius:8px;
+  font-weight:700;font-family:'Outfit',sans-serif;
+  font-size:0.95rem;cursor:pointer;
+  transition:transform 0.2s,box-shadow 0.2s;
+  letter-spacing:0.02em;
+}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 4px 18px rgba(99,102,241,0.45);}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+.btn-secondary{
+  background:rgba(255,255,255,0.05);
+  border:1px solid var(--border);color:var(--text);
+  padding:12px 24px;border-radius:8px;
+  font-weight:600;font-family:'Outfit',sans-serif;
+  cursor:pointer;transition:background 0.2s;
+}
+.btn-secondary:hover{background:rgba(255,255,255,0.1);}
+
+/* ── Pixel Canvas ── */
+.pixel-canvas{image-rendering:pixelated;image-rendering:crisp-edges;cursor:crosshair;}
+
+/* ── Layout ── */
+.page{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;}
+.page-inner{max-width:56rem;width:100%;}
+header{text-align:center;margin-bottom:3rem;}
+h1{
+  font-size:clamp(2.5rem,6vw,3.75rem);
+  font-weight:800;letter-spacing:-0.05em;
+  background:linear-gradient(135deg,#818cf8,#a855f7);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+header p{color:var(--muted);font-size:1.1rem;margin-top:0.75rem;}
+
+/* ── Sections ── */
+section{display:flex;flex-direction:column;align-items:center;}
+.section-title-indigo{font-size:1.5rem;font-weight:700;color:#a5b4fc;margin-bottom:1.5rem;letter-spacing:-0.02em;}
+.section-title-purple{font-size:1.5rem;font-weight:700;color:#d8b4fe;margin-bottom:1.5rem;letter-spacing:-0.02em;}
+.section-title-emerald{font-size:1.875rem;font-weight:900;color:#34d399;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.25rem;}
+
+/* ── Step fade ── */
+.fade-in{animation:fadeIn 0.7s both;}
+.slide-up{animation:slideUp 0.7s both;}
+.zoom-in{animation:zoomIn 0.7s both;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{transform:translateY(1rem);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes zoomIn{from{transform:scale(0.95);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* ── Step content wrapper ── */
+.step-wrap{display:none;}
+.step-wrap.active{display:flex;flex-direction:column;align-items:center;}
+
+/* ── Pixel editor ── */
+.pixel-editor-wrap{display:flex;flex-direction:column;gap:1rem;align-items:center;padding:1.5rem;}
+.color-row{display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;}
+.color-swatch{
+  width:2rem;height:2rem;border-radius:6px;
+  border:2px solid transparent;cursor:pointer;
+  transition:transform 0.15s;flex-shrink:0;
+}
+.color-swatch:hover{transform:scale(1.1);}
+.color-swatch.active{border-color:#fff;}
+.sep{width:1px;height:2rem;background:#334155;margin:0 0.5rem;}
+.tool-btn{
+  padding:0.35rem 0.85rem;border-radius:6px;
+  border:none;color:#fff;font-size:0.8rem;
+  cursor:pointer;transition:background 0.2s;
+}
+.canvas-border{
+  border:4px solid #334155;border-radius:8px;
+  overflow:hidden;box-shadow:0 0 0 1px rgba(99,102,241,0.2);
+}
+.mono{font-family:'JetBrains Mono',monospace;}
+
+/* ── Class selection ── */
+.class-btn{
+  padding:2rem;border-radius:16px;border:2px solid var(--border);
+  background:transparent;color:var(--text);cursor:pointer;
+  transition:all 0.2s;min-width:160px;text-align:center;
+}
+.class-btn:hover{border-color:#475569;}
+.class-btn.selected-melee{border-color:#6366f1;background:rgba(99,102,241,0.1);box-shadow:0 0 30px rgba(99,102,241,0.2);}
+.class-btn.selected-ranged{border-color:#a855f7;background:rgba(168,85,247,0.1);box-shadow:0 0 30px rgba(168,85,247,0.2);}
+.class-emoji{font-size:2.25rem;margin-bottom:1rem;display:block;}
+.class-label{font-size:1.1rem;font-weight:700;}
+.class-desc{font-size:0.8rem;color:var(--muted);margin-top:0.5rem;}
+
+/* ── Stats grid ── */
+.stats-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.5rem;width:100%;margin-bottom:2.5rem;}
+.stat-card{padding:1.25rem;background:rgba(15,23,42,0.5);border-radius:12px;border:1px solid var(--border);}
+.stat-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--dim);margin-bottom:0.25rem;}
+.stat-value{font-size:1.875rem;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.stat-hp{color:#f87171;}
+.stat-atk{color:#818cf8;}
+.stat-spd{color:#34d399;}
+.stat-rng{color:#fbbf24;}
+
+/* ── Difficulty ── */
+.diff-btn{
+  padding:1rem;border-radius:12px;border:2px solid var(--border);
+  background:transparent;color:var(--text);cursor:pointer;
+  transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:0.4rem;
+}
+.diff-btn:hover{border-color:#475569;}
+.diff-btn.sel-easy{border-color:#22c55e;background:rgba(34,197,94,0.1);}
+.diff-btn.sel-hard{border-color:#ef4444;background:rgba(239,68,68,0.1);}
+.diff-label-easy{font-size:1rem;font-weight:700;}
+.diff-label-hard{font-size:1rem;font-weight:700;}
+.diff-btn.sel-easy .diff-label-easy{color:#3b82f6;}
+.diff-btn.sel-hard .diff-label-hard{color:#ef4444;}
+.diff-sub{font-size:0.75rem;color:var(--dim);}
+
+/* ── Game HUD ── */
+#hud-bar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:0.75rem 1.5rem;border-top:2px solid rgba(99,102,241,0.3);
+}
+#hud-bar.hard-border{border-top-color:rgba(239,68,68,0.4);}
+.hud-stat{display:flex;flex-direction:column;}
+.hud-stat span:first-child{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--dim);}
+.hud-stat span:last-child{font-family:'JetBrains Mono',monospace;font-weight:700;}
+#hud-hp{color:#f87171;}
+#hud-hp.danger{animation:pulse 0.8s infinite;}
+#hud-atk{color:#818cf8;}
+#hud-mode{font-size:0.75rem;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;color:#64748b;}
+#hud-mode.hard{color:#ef4444;animation:pulse 1s infinite;}
+@keyframes pulse{50%{opacity:0.4}}
+
+/* ── Game canvas wrap ── */
+#game-wrap{
+  border:8px solid var(--border);border-radius:16px;overflow:hidden;
+  position:relative;box-shadow:0 25px 50px rgba(0,0,0,0.6);
+}
+#game-wrap.hard-shadow{box-shadow:0 0 60px rgba(239,68,68,0.15);}
+
+/* ── Quest tracker ── */
+#quest-overlay{
+  position:absolute;top:1.25rem;left:1.25rem;z-index:10;
+  pointer-events:none;
+}
+.quest-panel{
+  backdrop-filter:blur(8px);
+  background:rgba(15,23,42,0.75);
+  border:1px solid var(--border);
+  border-left:4px solid #f59e0b;
+  border-radius:8px;
+  padding:0.5rem 0.85rem;
+  font-size:0.8rem;
+}
+.quest-title{
+  font-size:0.65rem;font-weight:900;text-transform:uppercase;
+  letter-spacing:0.1em;color:var(--dim);margin-bottom:0.35rem;
+}
+.quest-item{display:flex;align-items:center;gap:0.5rem;}
+.quest-dot{width:8px;height:8px;border-radius:50%;background:#475569;flex-shrink:0;}
+.quest-dot.done{background:#22c55e;box-shadow:0 0 8px #22c55e;}
+.quest-text{font-family:'JetBrains Mono',monospace;font-weight:700;color:#cbd5e1;}
+.quest-text.done{color:#34d399;text-decoration:line-through;opacity:0.5;}
+
+/* ── Return link ── */
+.return-link{
+  display:block;margin-top:1.5rem;text-align:center;
+  color:var(--dim);font-size:0.85rem;cursor:pointer;
+  text-decoration:underline;text-underline-offset:4px;
+  background:none;border:none;
+}
+.return-link:hover{color:#94a3b8;}
+
+/* ── Back nav ── */
+.nav-btns{display:flex;gap:1rem;margin-top:2rem;}
+
+/* ── Processing overlay ── */
+#loading-overlay{
+  display:none;position:fixed;inset:0;z-index:999;
+  background:rgba(13,15,20,0.85);backdrop-filter:blur(8px);
+  align-items:center;justify-content:center;flex-direction:column;gap:1rem;
+}
+#loading-overlay.show{display:flex;}
+.spinner{
+  width:48px;height:48px;border:3px solid rgba(99,102,241,0.2);
+  border-top-color:#6366f1;border-radius:50%;animation:spin 0.8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loading-overlay p{color:var(--muted);font-size:0.9rem;letter-spacing:0.05em;}
+
+/* ── Responsive ── */
+@media(max-width:600px){
+  .stats-grid{grid-template-columns:1fr 1fr;}
+  .class-btn{min-width:120px;padding:1.25rem;}
+}
+</style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <p>CALCULATING STATS...</p>
+</div>
+
+<main class="page">
+  <div class="page-inner">
+    <header>
+      <h1>PROMPTARIA</h1>
+      <p>Weaponize your imagination with ML-driven stats</p>
+    </header>
+
+    <!-- ═══════════ STEP 1: Character ═══════════ -->
+    <div id="step-character" class="step-wrap active fade-in slide-up">
+      <h2 class="section-title-indigo">STEP 1: FORGE YOUR HERO</h2>
+      <div id="char-editor" class="glass pixel-editor-wrap"></div>
+      <button class="btn-primary" style="margin-top:2rem;padding:12px 3rem;" onclick="goTo('weapon')">
+        Next: Forge Weapon
+      </button>
+    </div>
+
+    <!-- ═══════════ STEP 2: Weapon ═══════════ -->
+    <div id="step-weapon" class="step-wrap fade-in slide-up">
+      <h2 class="section-title-purple">STEP 2: FORGE YOUR WEAPON</h2>
+      <div id="wpn-editor" class="glass pixel-editor-wrap"></div>
+      <div class="nav-btns">
+        <button class="btn-secondary" onclick="goTo('character')">Back</button>
+        <button class="btn-primary" style="padding:12px 2.5rem;" onclick="goTo('class')">Next: Select Class</button>
+      </div>
+    </div>
+
+    <!-- ═══════════ STEP 3: Class ═══════════ -->
+    <div id="step-class" class="step-wrap fade-in slide-up glass" style="padding:3rem;">
+      <h2 class="section-title-indigo">STEP 3: CHOOSE YOUR PATH</h2>
+      <div style="display:flex;gap:2rem;margin-bottom:3rem;">
+        <button id="btn-melee" class="class-btn selected-melee" onclick="selectClass('melee')">
+          <span class="class-emoji">⚔️</span>
+          <div class="class-label">MELEE</div>
+          <div class="class-desc">High ATK &amp; HP</div>
+        </button>
+        <button id="btn-ranged" class="class-btn" onclick="selectClass('ranged')">
+          <span class="class-emoji">🏹</span>
+          <div class="class-label">RANGED</div>
+          <div class="class-desc">High SPD &amp; RANGE</div>
+        </button>
+      </div>
+      <button id="btn-generate" class="btn-primary" style="padding:14px 4rem;font-size:1rem;" onclick="generateStats()">
+        GENERATE HERO STATS
+      </button>
+      <div style="margin-top:1rem;">
+        <button class="btn-secondary" onclick="goTo('weapon')">Back</button>
+      </div>
+    </div>
+
+    <!-- ═══════════ STEP 4: Stats ═══════════ -->
+    <div id="step-stats" class="step-wrap fade-in zoom-in glass" style="padding:3rem;width:100%;">
+      <h2 class="section-title-emerald">FORGING COMPLETE</h2>
+      <p style="color:var(--dim);margin-bottom:2.5rem;font-size:0.9rem;">Analysis from Neural Network successfully processed</p>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Health Points</div>
+          <div class="stat-value stat-hp" id="val-hp">100</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Attack Power</div>
+          <div class="stat-value stat-atk" id="val-atk">10.0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Movement Speed</div>
+          <div class="stat-value stat-spd" id="val-spd">5.0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Attack Range</div>
+          <div class="stat-value stat-rng" id="val-rng">5.0</div>
+        </div>
+      </div>
+
+      <div style="width:100%;margin-bottom:2.5rem;">
+        <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--dim);text-align:center;margin-bottom:1rem;">Select Challenge Level</div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;">
+          <button id="diff-easy" class="diff-btn sel-easy" onclick="selectDiff('easy')">
+            <span class="diff-label-easy">EASY</span>
+            <span class="diff-sub">Classic Adventure</span>
+          </button>
+          <button id="diff-hard" class="diff-btn" onclick="selectDiff('hard')">
+            <span class="diff-label-hard">HARD</span>
+            <span class="diff-sub">Survival &amp; Lighting</span>
+          </button>
+        </div>
+      </div>
+
+      <button class="btn-primary" style="width:100%;padding:1.1rem;font-size:1.3rem;letter-spacing:-0.02em;" onclick="startGame()">
+        START BATTLE
+      </button>
+    </div>
+
+    <!-- ═══════════ STEP 5: Game ═══════════ -->
+    <canvas id="gc" style="display:block;border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary);width:100%;max-width:1200px;image-rendering:pixelated;"></canvas>
+
+    <div id="step-game" class="step-wrap fade-in" style="width:100%;">
+      <div id="hud-bar" class="glass" style="width:100%;border-radius:12px 12px 0 0;margin-bottom:0;">
+        <div style="display:flex;gap:2rem;">
+          <div class="hud-stat">
+            <span>HP</span>
+            <span id="hud-hp">100</span>
+          </div>
+          <div class="hud-stat">
+            <span>ATK</span>
+            <span id="hud-atk">10.0</span>
+          </div>
+        </div>
+        <div id="hud-mode">CLASSIC MODE</div>
+        <div class="hud-stat" style="text-align:right;">
+          <span>KILLS</span>
+          <span id="hud-kills" class="mono" style="color:#fbbf24;">0</span>
+        </div>
+      </div>
+
+      <div id="game-wrap">
+        <div id="quest-overlay">
+          <div class="quest-panel">
+            <div class="quest-title">Active Tasks</div>
+            <div class="quest-item">
+              <div id="quest-dot" class="quest-dot"></div>
+              <span id="quest-text" class="quest-text mono">Ghost 0/5</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button class="return-link" onclick="goTo('character')">Return to Forge</button>
+    </div>
+
+  </div>
+</main>
+
+<script>
+// ═══════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════
+const PIXEL_COLORS = [
+  'transparent', '#000000', '#ffffff', '#ff4444',
+  '#ffeb3b',    '#2196f3',  '#4caf50',  '#e91e63'
+];
+
+// ═══════════════════════════════════════════════
+// APP STATE
+// ═══════════════════════════════════════════════
+const state = {
+  step: 'character',
+  characterData: new Array(32 * 32).fill(0),
+  weaponData:    new Array(16 * 16).fill(0),
+  selectedClass: 'melee',
+  difficulty: 'easy',
+  stats: { hp: 100, atk: 10, spd: 5, range: 5 },
+  terrain: null,
+  kills: 0,
+  playerHp: 100,
+};
+
+// ═══════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════
+function goTo(step) {
+  document.querySelectorAll('.step-wrap').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('step-' + step);
+  el.classList.add('active');
+  // re-trigger animation
+  el.classList.remove('fade-in','slide-up','zoom-in');
+  void el.offsetWidth;
+  el.classList.add('fade-in','slide-up');
+  state.step = step;
+}
+
+// ═══════════════════════════════════════════════
+// PIXEL CANVAS COMPONENT
+// ═══════════════════════════════════════════════
+function createPixelEditor(containerId, gridW, gridH, scale, dataKey) {
+  const container = document.getElementById(containerId);
+
+  // Toolbar
+  const toolbar = document.createElement('div');
+  toolbar.className = 'color-row';
+
+  let selectedColor = 1;
+  let tool = 'pencil';
+  const swatches = [];
+
+  PIXEL_COLORS.forEach((col, i) => {
+    if (i === 0) return;
+    const btn = document.createElement('button');
+    btn.className = 'color-swatch' + (i === 1 ? ' active' : '');
+    btn.style.backgroundColor = col;
+    btn.title = 'Color ' + i;
+    btn.addEventListener('click', () => {
+      swatches.forEach(s => s.classList.remove('active'));
+      btn.classList.add('active');
+      selectedColor = i;
+      tool = 'pencil';
+      eraserBtn.style.background = '#1e293b';
+    });
+    swatches.push(btn);
+    toolbar.appendChild(btn);
+  });
+
+  const sep = document.createElement('div');
+  sep.className = 'sep';
+  toolbar.appendChild(sep);
+
+  const eraserBtn = document.createElement('button');
+  eraserBtn.className = 'tool-btn';
+  eraserBtn.style.background = '#1e293b';
+  eraserBtn.textContent = 'Eraser';
+  eraserBtn.addEventListener('click', () => {
+    tool = 'eraser';
+    swatches.forEach(s => s.classList.remove('active'));
+    eraserBtn.style.background = '#4f46e5';
+  });
+  toolbar.appendChild(eraserBtn);
+
+  const clearBtn = document.createElement('button');
+  clearBtn.className = 'tool-btn';
+  clearBtn.style.background = '#1e293b';
+  clearBtn.textContent = 'Clear';
+  clearBtn.addEventListener('click', () => {
+    state[dataKey].fill(0);
+    redraw();
+  });
+  clearBtn.addEventListener('mouseover', () => { clearBtn.style.background = '#7f1d1d'; });
+  clearBtn.addEventListener('mouseout',  () => { clearBtn.style.background = '#1e293b'; });
+  toolbar.appendChild(clearBtn);
+
+  container.appendChild(toolbar);
+
+  // Canvas
+  const canvasWrap = document.createElement('div');
+  canvasWrap.className = 'canvas-border';
+  const canvas = document.createElement('canvas');
+  canvas.className = 'pixel-canvas';
+  canvas.width  = gridW * scale;
+  canvas.height = gridH * scale;
+  canvasWrap.appendChild(canvas);
+  container.appendChild(canvasWrap);
+
+  // Size label
+  const label = document.createElement('div');
+  label.style.cssText = 'margin-top:0.5rem;font-size:0.8rem;color:#64748b;font-family:JetBrains Mono,monospace;';
+  label.textContent = gridW + 'x' + gridH + ' Grid';
+  container.appendChild(label);
+
+  const ctx = canvas.getContext('2d');
+
+  function redraw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // grid
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 0.5;
+    for (let x = 0; x <= gridW; x++) {
+      ctx.beginPath(); ctx.moveTo(x * scale, 0); ctx.lineTo(x * scale, gridH * scale); ctx.stroke();
+    }
+    for (let y = 0; y <= gridH; y++) {
+      ctx.beginPath(); ctx.moveTo(0, y * scale); ctx.lineTo(gridW * scale, y * scale); ctx.stroke();
+    }
+    // pixels
+    state[dataKey].forEach((colorIdx, i) => {
+      if (colorIdx === 0) return;
+      const x = i % gridW;
+      const y = Math.floor(i / gridW);
+      ctx.fillStyle = PIXEL_COLORS[colorIdx];
+      ctx.fillRect(x * scale, y * scale, scale, scale);
+    });
+  }
+  redraw();
+
+  let isDrawing = false;
+
+  function paint(e) {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+    const x = Math.floor((clientX - rect.left) / scale);
+    const y = Math.floor((clientY - rect.top)  / scale);
+    if (x < 0 || x >= gridW || y < 0 || y >= gridH) return;
+    const idx = y * gridW + x;
+    const val = tool === 'pencil' ? selectedColor : 0;
+    if (state[dataKey][idx] !== val) {
+      state[dataKey][idx] = val;
+      redraw();
+    }
+  }
+
+  canvas.addEventListener('pointerdown', e => { isDrawing = true; canvas.setPointerCapture(e.pointerId); paint(e); });
+  canvas.addEventListener('pointermove', e => { if (isDrawing) paint(e); });
+  canvas.addEventListener('pointerup',   ()  => { isDrawing = false; });
+  canvas.addEventListener('pointerleave',()  => { isDrawing = false; });
+  canvas.style.touchAction = 'none';
+}
+
+// ═══════════════════════════════════════════════
+// CLASS SELECTION
+// ═══════════════════════════════════════════════
+function selectClass(cls) {
+  state.selectedClass = cls;
+  const m = document.getElementById('btn-melee');
+  const r = document.getElementById('btn-ranged');
+  m.className = 'class-btn' + (cls === 'melee'   ? ' selected-melee'   : '');
+  r.className = 'class-btn' + (cls === 'ranged'   ? ' selected-ranged'  : '');
+}
+
+// ═══════════════════════════════════════════════
+// DIFFICULTY
+// ═══════════════════════════════════════════════
+function selectDiff(d) {
+  state.difficulty = d;
+  document.getElementById('diff-easy').className = 'diff-btn' + (d === 'easy' ? ' sel-easy' : '');
+  document.getElementById('diff-hard').className = 'diff-btn' + (d === 'hard' ? ' sel-hard' : '');
+}
+
+// ═══════════════════════════════════════════════
+// MOCK ML API (replaces localhost:8000 calls)
+// ═══════════════════════════════════════════════
+function mockPredictWeapon(pixels) {
+  const filled = pixels.filter(p => p > 0).length;
+  const total  = pixels.length;
+  const density = filled / total;
+  // simulate melee vs ranged similarity based on drawing density
+  const melee  = Math.min(1, density * 3 + Math.random() * 0.3);
+  const ranged = Math.min(1, (1 - density) * 3.5 + Math.random() * 0.3);
+  return { similarities: { melee, ranged } };
+}
+
+function mockGenerateTerrain() {
+  const size = 64;
+    const matrix = [];
+
+    for (let r = 0; r < size; r++) {
+        let row = [];
+        for (let c = 0; c < size; c++) {
+            if (r < size/8) {
+                row.push(0);   // nửa trên
+            } else if (r === size/8) {
+                row.push(1);   // hàng giữa
+            } else {
+                row.push(2);   // nửa dưới
+            }
+        }
+        matrix.push(row);
+    }
+
+    return matrix;
+  }
+// ═══════════════════════════════════════════════
+// GENERATE STATS
+// ═══════════════════════════════════════════════
+async function generateStats() {
+  document.getElementById('loading-overlay').classList.add('show');
+  await new Promise(r => setTimeout(r, 900)); // simulate network
+
+  const { similarities } = mockPredictWeapon(state.weaponData);
+  const terrainData = mockGenerateTerrain();
+
+  const base = {
+    melee:  { hp: 100, atk: 15, spd: 5,  range: 2  },
+    ranged: { hp: 70,  atk: 22, spd: 7,  range: 10 },
+  }[state.selectedClass];
+
+  state.stats = {
+    atk:   base.atk   * (0.5 + similarities.melee),
+    range: base.range  * (0.5 + similarities.ranged),
+    spd:   base.spd    * (0.5 + (state.selectedClass === 'ranged' ? similarities.ranged : similarities.melee / 2)),
+    hp:    base.hp     * (0.5 + (state.selectedClass === 'melee'  ? similarities.melee  : similarities.ranged / 2)),
+  };
+
+  state.terrain  = terrainData.result;
+  state.playerHp = state.stats.hp;
+  state.kills    = 0;
+
+  document.getElementById('val-hp').textContent  = Math.round(state.stats.hp);
+  document.getElementById('val-atk').textContent = state.stats.atk.toFixed(1);
+  document.getElementById('val-spd').textContent = state.stats.spd.toFixed(1);
+  document.getElementById('val-rng').textContent = state.stats.range.toFixed(1);
+
+  document.getElementById('loading-overlay').classList.remove('show');
+  goTo('stats');
+}
+
+// ═══════════════════════════════════════════════
+// START GAME
+// ═══════════════════════════════════════════════
+function startGame() {
+  goTo('game');
+  const hudBar = document.getElementById('hud-bar');
+  const modeEl = document.getElementById('hud-mode');
+  const gameWrap = document.getElementById('game-wrap');
+  if (state.difficulty === 'hard') {
+    hudBar.classList.add('hard-border');
+    modeEl.className = 'hud-mode hard';
+    modeEl.textContent = 'HARD MODE ACTIVATED';
+    gameWrap.classList.add('hard-shadow');
+  } else {
+    hudBar.classList.remove('hard-border');
+    modeEl.className = '';
+    modeEl.id = 'hud-mode';
+    modeEl.textContent = 'CLASSIC MODE';
+    gameWrap.classList.remove('hard-shadow');
+  }
+  document.getElementById('hud-atk').textContent = state.stats.atk.toFixed(1);
+  runArena();
+}
+
+// ═══════════════════════════════════════════════
+// ARENA ENGINE
+// ═══════════════════════════════════════════════
+let arenaFrameId = null;
+
+function runArena() {
+  if (arenaFrameId) cancelAnimationFrame(arenaFrameId);
+
+  async function CallAPI(Matrix) {
+    const response = await fetch("http://localhost:8000/process", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+            Matrix: Matrix
+        })
+    });
+
+    const data = await response.json();
+    return data;
+}
+class Player {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.vx = 0;
+        this.vy = 0;
+        this.w = 22;
+        this.h = 30;
+        this.hp = state.stats.hp;
+        this.onGround = false;
+        this.facing = 1;
+        this.walkFrame = 0;
+        this.walkTimer = 0;
+        this.isAttacking = false;
+        this.attackTimer = 0;
+        this.attackCooldown = 0;
+    }
+}
+class Camera {
+    constructor(x,y) {
+        this.x = x;
+        this.y = y;
+    }
+}
+const State = {
+    lastGrid: { x: -1, y: -1 },
+}
+
+
+function MouseMoving(canvas, tileSize, callback) {
+    let check = 0;
+    canvas.addEventListener('mousemove', (event) => {
+    // 1. Lấy vị trí của Canvas trên màn hình
+        const rect = canvas.getBoundingClientRect();
+    
+    // 2. Tính toán tọa độ X, Y của chuột bên trong Canvas
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+
+    // 3. Quy đổi từ Pixel sang tọa độ Ô (Grid Index)
+        const gridX = Math.floor(mouseX / tileSize);
+        const gridY = Math.floor(mouseY / tileSize);
+
+        if (Math.abs(gridX - State.lastGrid.x) >7 || Math.abs( gridY - State.lastGrid.y)>7) {
+            State.lastGrid = { x: gridX, y: gridY };
+            console.log(`Mouse moved to Grid: (${gridX}, ${gridY})`);
+            check = 1; 
+            callback(check);
+        }
+    });
+}
+
+class Ghost {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.w = 22;
+        this.h = 30;
+        this.speed = 1;
+        this.hp = 30;
+        this.maxHp = 30;
+    }
+}
+
+  
+function generateMatrix() {
+    const size = 64;
+    const matrix = [];
+
+    for (let r = 0; r < size; r++) {
+        let row = [];
+        for (let c = 0; c < size; c++) {
+            if (r < size/8) {
+                row.push(0);   // nửa trên
+            } else if (r === size/8) {
+                row.push(1);   // hàng giữa
+            } else {
+                row.push(2);   // nửa dưới
+            }
+        }
+        matrix.push(row);
+    }
+
+    return matrix;
+}
+
+let tilemap = generateMatrix();
+
+let lastTile = { r: -1, c: -1};
+function getTileAt(row, col) {
+    if (row < 0 || row >= MAP_ROWS || col < 0 || col >= MAP_COLS) return null;
+    if (lastTile.r !== row || lastTile.c !== col) {
+      if (lastTile.r +4  <= row || lastTile.r -4 >= row || lastTile.c +2 <= col || lastTile.c -2 >= col) {
+        lastTile = { r: row, c: col };
+        getSurroundingMatrix(lastTile.r, lastTile.c);
+      }
+    }
+}
+
+function getSurroundingTiles(row, col) {
+    let surroundingTiles = [];
+    for (let r = Math.max(0, row - 1); r <= Math.min(MAP_ROWS - 1, row + 1); r++) {
+        for (let c = Math.max(0, col - 1); c <= Math.min(MAP_COLS - 1, col + 1); c++) {
+            if (r !== row || c !== col) {
+                surroundingTiles.push({ r, c });
+            }
+        }
+    }
+    return surroundingTiles;
+}
+
+let surroundingMatrix = [];
+function getSurroundingMatrix(row, col){
+  surroundingMatrix = []; 
+  let surroundingTiles = getSurroundingTiles(row, col);
+  surroundingTiles.forEach((tiles) => {
+    surroundingMatrix.push(tilemap[tiles.r][tiles.c]);
+  });
+}
+
+const canvas = document.getElementById('gc');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+canvas.width = 700;
+canvas.height = 400;
+
+const T = 32;
+
+
+const TILE_AIR   = 0;
+const TILE_GRASS = 1;
+const TILE_DIRT  = 2;
+const TILE_STONE = 3;
+const TILE_WOOD  = 4;
+const TILE_LEAVES  = 5;
+
+const TILE_COAL  = 7;
+const TILE_IRON  = 8;
+const TILE_GOLD  = 9;
+const TILE_DIAM  = 10;
+const TILE_EMER  = 11;
+
+const MAP_COLS = 64;
+const MAP_ROWS = 64;
+
+const SOLID_TILES = new Set([
+  TILE_GRASS,
+  TILE_DIRT,
+  TILE_STONE,
+  TILE_WOOD,
+  TILE_LEAVES,
+  TILE_COAL,  
+  TILE_IRON,  
+  TILE_GOLD,  
+  TILE_DIAM, 
+  TILE_EMER, 
+]);
+
+
+// sinh dia hinh theo height map
+const heightMap = [];
+let h = 10;
+for (let c = 0; c < MAP_COLS; c++) {
+  h += (Math.random() - 0.5) * 1.8;
+  h = Math.max(6, Math.min(14, h));
+  heightMap.push(Math.round(h));
+}
+
+
+function isSolid(r, c) {
+  if (r < 0 || r >= MAP_ROWS || c < 0 || c >= MAP_COLS) return false;
+  return SOLID_TILES.has(tilemap[r][c]);
+}
+
+// mau sac tile
+const TILE_COLORS = {
+  [TILE_GRASS]: '#4a9e2f',
+  [TILE_DIRT]:  '#7a4f28',
+  [TILE_STONE]: '#6b6b6b',
+  [TILE_WOOD]:  '#8b5a2b',
+  [TILE_LEAVES]: '#2e8b57',
+  [TILE_COAL]:  '#5a5a5a',
+  [TILE_IRON]:  '#808080',
+  [TILE_GOLD]:  '#ffd700',
+  [TILE_DIAM]:  '#b0e0e6',
+  [TILE_EMER]:  '#00ff00'
+
+};
+const TILE_TOP = {
+  [TILE_GRASS]: '#6ecc44'
+};
+const TILE_SHADE = {
+  [TILE_GRASS]: '#3a7d24',
+  [TILE_DIRT]:  '#5c3d1e',
+  [TILE_STONE]: '#505050',
+  [TILE_WOOD]:  '#5c3a1e',
+  [TILE_LEAVES]: '#1f5d3a',
+  [TILE_COAL]:  '#4a4a4a',
+  [TILE_IRON]:  '#707070',
+  [TILE_GOLD]:  '#bfa000',
+  [TILE_DIAM]:  '#90b0b0',
+  [TILE_EMER]:  '#00cc00'
+};
+
+function drawTilemap(camX, camY) {
+  const startC = Math.max(0, Math.floor(camX / T));
+  const endC   = Math.min(MAP_COLS - 1, Math.ceil((camX + canvas.width) / T));
+  const startR = Math.max(0, Math.floor(camY / T));
+  const endR   = Math.min(MAP_ROWS - 1, Math.ceil((camY + canvas.height) / T));
+
+  for (let r = startR; r <= endR; r++) {
+    for (let c = startC; c <= endC; c++) {
+      const tile = tilemap[r][c];
+      if (tile === TILE_AIR) continue;
+
+      const sx = c * T - camX;
+      const sy = r * T - camY;
+
+      ctx.fillStyle = TILE_COLORS[tile] || '#888';
+      ctx.fillRect(sx, sy, T, T);
+
+      // highlight top
+      if (TILE_TOP[tile]) {
+        ctx.fillStyle = TILE_TOP[tile];
+        ctx.fillRect(sx, sy, T, 5);
+      }
+      // shade bottom-right
+      ctx.fillStyle = TILE_SHADE[tile] || '#444';
+      ctx.fillRect(sx, sy + T - 4, T, 4);
+      ctx.fillRect(sx + T - 4, sy, 4, T);
+
+      // duong luoi nhe
+      ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+      ctx.lineWidth = 0.3;
+      ctx.strokeRect(sx, sy, T, T);
+    }
+  }
+}
+
+
+// nhân vật
+let projectiles = [];
+const player = new Player(3 * T, (heightMap[3] - 2) * T);
+const camera = new Camera(0, 0);
+
+const keys = {};
+document.addEventListener('keydown', e => { keys[e.code] = true; e.preventDefault(); });
+document.addEventListener('keyup',   e => { keys[e.code] = false; });
+
+
+function drawPlayer(camX, camY) {
+  const px = player.x - camX;
+  const py = player.y - camY;
+  ctx.save();
+  ctx.translate(px + player.w / 2, py + player.h / 2);
+  ctx.scale(player.facing, 1);
+  const lx = player.onGround && (keys['KeyA'] || keys['ArrowLeft'] || keys['KeyD'] || keys['ArrowRight'])
+    ? Math.sin(player.walkFrame * 0.5) * 5 : 0;
+  ctx.fillStyle = '#2c2c8a';
+  ctx.fillRect(-8, 6, 7, 14);
+  ctx.fillRect(1, 6, 7, 14);
+  ctx.fillStyle = '#1a5e1a';
+  ctx.fillRect(-9, -4, 18, 12);
+  ctx.fillStyle = '#f5c07a';
+  ctx.beginPath();
+  ctx.arc(0, -11, 9, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#1a1a6a';
+  ctx.beginPath(); ctx.arc(-3, -12, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(3, -12, 2, 0, Math.PI * 2); ctx.fill();
+
+
+  state.characterData.forEach((colorIdx, i) => {
+      if (colorIdx === 0) return;
+      ctx.fillStyle = PIXEL_COLORS[colorIdx];
+      ctx.fillRect((i % 32) - 16, Math.floor(i / 32) - 16, 2, 2);
+    });
+  if (player.isAttacking && state.selectedClass === 'melee') {
+      ctx.rotate((player.attackTimer / 20) * Math.PI * 0.8);
+    }
+  ctx.translate(8, 0);
+  state.weaponData.forEach((colorIdx, i) => {
+      if (colorIdx === 0) return;
+      ctx.fillStyle = PIXEL_COLORS[colorIdx];
+      ctx.fillRect((i % 16) - 8, Math.floor(i / 16) - 8, 2, 2);
+    });
+  ctx.restore();
+
+  projectiles.forEach(p => {
+    ctx.save();
+    ctx.translate(p.x - camX, p.y - camY);
+    ctx.fillStyle = '#fff';
+    ctx.shadowBlur = 10; ctx.shadowColor = '#0ff';
+    ctx.fillRect(-2, -2, 4, 4);
+    ctx.restore();
+  });
+  
+}
+
+function resolveCollision() {
+  const STEPS = 3;
+  player.x += player.vx;
+  for (let s = 0; s < STEPS; s++) {
+    const c0 = Math.floor(player.x / T);
+    const c1 = Math.floor((player.x + player.w - 1) / T);
+    const rMid = Math.floor((player.y + player.h / 2) / T);
+    if (player.vx > 0) {
+      if (isSolid(rMid, c1)) { player.x = c1 * T - player.w; player.vx = 0; }
+    } else if (player.vx < 0) {
+      if (isSolid(rMid, c0)) { player.x = (c0 + 1) * T; player.vx = 0; }
+    }
+  }
+
+  player.y += player.vy;
+  player.onGround = false;
+  const c0 = Math.floor(player.x / T);
+  const c1 = Math.floor((player.x + player.w - 1) / T);
+  if (player.vy >= 0) {
+    const rBot = Math.floor((player.y + player.h) / T);
+    for (let c = c0; c <= c1; c++) {
+      if (isSolid(rBot, c)) {
+        player.y = rBot * T - player.h;
+        player.vy = 0;
+        player.onGround = true;
+        break;
+      }
+    }
+  } else {
+    const rTop = Math.floor(player.y / T);
+    for (let c = c0; c <= c1; c++) {
+      if (isSolid(rTop, c)) {
+        player.y = (rTop + 1) * T;
+        player.vy = 0;
+        break;
+      }
+    }
+  }
+}
+
+
+function drawSky() {
+  ctx.fillStyle = '#0f1b2d';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  const stars = [[50,20],[150,40],[280,15],[400,35],[530,10],[640,50],[80,80],[220,70],[360,60],[480,85],[600,30]];
+  stars.forEach(([sx, sy]) => {
+    ctx.beginPath();
+    ctx.arc(sx, sy, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+let iron = 0;
+let gold = 0;
+let diamond = 0;
+function drawHUD() {
+  document.getElementById("hud-hp").innerText = Math.floor(player.hp);
+  document.getElementById("hud-kills").innerText = Math.floor(kills);
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.beginPath();
+  ctx.roundRect(10, 10, 400, 78, 8);
+  ctx.fill();
+  ctx.fillStyle = '#f5c842';
+  ctx.font = '11px monospace';
+  ctx.fillStyle = '#f5c842';
+  ctx.font = '11px monospace';
+  ctx.fillText('Goal: Iron - ' + iron + '/5, Gold - ' + gold + '/5, Diamond - ' + diamond + '/5, Kill - ' + kills + '/10' , 22, 65);
+  const col = Math.floor(player.x / T);
+  const row = Math.floor(player.y / T);
+  getTileAt(row, col);
+  ctx.fillText('x:' + Math.round(player.x) + ' y:' + Math.round(player.y), 22, 50);
+  
+}
+
+
+let time = 0;
+let kills = 0;
+
+function update() {
+  time += 0.016;
+  const spd = 2.2, jmp = -8, grv = 0.5;
+
+  if (keys['KeyA'] || keys['ArrowLeft'])  { player.vx = -spd; player.facing = -1; }
+  else if (keys['KeyD'] || keys['ArrowRight']) { player.vx = spd;  player.facing = 1; }
+  else player.vx *= 0.75;
+
+  if ((keys['KeyW'] || keys['ArrowUp']) && player.onGround) {
+    player.vy = jmp;
+    player.onGround = false;
+  }
+
+  if (keys['Space'] && player.attackCooldown <= 0){
+    player.isAttacking = true;
+    player.attackTimer = 0;
+    player.attackCooldown = 30;
+    if (state.selectedClass === 'ranged') {
+      projectiles.push({ x: player.x, y: player.y+12, vx: player.facing*16, dist: 0, active: true });
+    }
+  }
+
+  if (player.isAttacking){
+    player.attackTimer++;
+    if (player.attackTimer > 20) player.isAttacking = false;
+    if (state.selectedClass === 'melee' && player.attackTimer > 5 && player.attackTimer < 15) {
+        const hb = { 
+          x: player.x + (player.facing > 0 ? player.w : -48),
+          y: player.y,
+          w: 48,
+          h: 32 
+        };
+        ghosts.forEach(m => {
+          if (m.x < hb.x+hb.w && m.x+m.w > hb.x && 
+            m.y < hb.y+hb.h && m.y+m.h > hb.y) {
+            m.hp -= state.stats.atk * 0.1;
+            if (m.hp <=0){
+              ghosts.splice(ghosts.indexOf(m), 1);
+              kills++;
+            }
+          }
+        });
+    }
+  }
+
+  // Projectiles
+    projectiles = projectiles.filter(p => p.active);
+    projectiles.forEach(p => {
+      p.x += p.vx; p.dist += Math.abs(p.vx);
+      if (p.dist > 32 * 30) p.active = false;
+      ghosts.forEach(m => {
+        if (p.x > m.x && p.x < m.x+m.w 
+        && p.y > m.y && p.y < m.y+m.h) {
+          m.hp -= state.stats.atk; p.active = false;
+          if (m.hp <=0){
+              ghosts.splice(ghosts.indexOf(m), 1);
+              kills++;
+            }
+        }
+      });
+    });
+
+  player.vy = Math.min(player.vy + grv, 18);
+
+  if (player.vx !== 0 && player.onGround) {
+    player.walkTimer++;
+    if (player.walkTimer > 3) { player.walkFrame++; player.walkTimer = 0; }
+  }
+
+  resolveCollision();
+
+  player.x = Math.max(0, Math.min(MAP_COLS * T - player.w, player.x));
+  if (player.y > MAP_ROWS * T + 50) {
+    player.y = (heightMap[3] - 2) * T;
+    player.x = 3 * T;
+    player.vy = 0;
+  }
+
+  const targetX = player.x + player.w / 2 - canvas.width / 2;
+  const targetY = player.y + player.h / 2 - canvas.height * 0.5;
+  camera.x += (targetX - camera.x) * 0.1;
+  camera.y += (targetY - camera.y) * 0.1;
+  camera.x = Math.max(0, Math.min(MAP_COLS * T - canvas.width,  camera.x));
+  camera.y = Math.max(0, Math.min(MAP_ROWS * T - canvas.height, camera.y));
+}
+
+function setupBlockBreaking() {
+  canvas.addEventListener('mousedown', e => {
+    const rect = canvas.getBoundingClientRect();
+    
+    // 2. Tính tỉ lệ giữa tọa độ nội bộ của canvas và kích thước hiển thị CSS
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    const localX = (e.clientX - rect.left) * scaleX;
+    const localY = (e.clientY - rect.top) * scaleY;
+
+    // Cộng thêm offset camera để ra tọa độ thực trong map
+    const worldX = localX + camera.x;
+    const worldY = localY + camera.y;
+
+    // Quy đổi sang hàng–cột trong tilemap
+    const c = Math.floor(worldX / T);
+    const r = Math.floor(worldY / T);
+
+    // Kiểm tra trong phạm vi bản đồ
+    if (r >= 0 && r < MAP_ROWS && c >= 0 && c < MAP_COLS) {
+      if (isSolid(r, c)) {
+        if (tilemap[r][c] === TILE_IRON) iron++;
+        if (tilemap[r][c] === TILE_GOLD) gold++;
+        if (tilemap[r][c] === TILE_DIAM) diamond++;
+        tilemap[r][c] = TILE_AIR; 
+      }
+    }
+  });
+}
+function mutateTerrainInDarkness(playerWorldX, playerWorldY, radius) {
+  for (let r = 0; r < MAP_ROWS; r++) {
+    for (let c = 0; c < MAP_COLS; c++) {
+      // Tọa độ tâm của Tile này trong thế giới thực (World Space)
+      const tx = c * T - 5*T;
+      const ty = r * T - 5*T;
+
+      // Tính khoảng cách dựa trên tọa độ World của người chơi
+      const dist = Math.hypot(tx - playerWorldX, ty - playerWorldY);
+
+      let tiles = [TILE_STONE, TILE_DIRT]
+      if (dist > radius) {
+        if (Math.random() < 0.004) {
+          if (tilemap[r][c] === TILE_AIR && Math.random() < 0.2)
+            tilemap[r][c] = tiles[Math.floor(Math.random() * tiles.length)];
+          if (tilemap[r][c] !== TILE_AIR)
+            tilemap[r][c] = tiles[Math.floor(Math.random() * tiles.length)];
+            if (Math.random() < 0.006)
+              tilemap[r][c] = TILE_AIR;
+        }
+      }
+    }
+  }
+}
+
+function drawLighting() {
+  const px = player.x - camera.x + player.w / 2;
+  const py = player.y - camera.y + player.h / 2;
+
+  // bán kính vùng sáng
+  const innerRadius = 50;   // vùng sáng rõ
+  const outerRadius = 110;  // vùng sáng mờ dần
+
+  // tạo gradient tròn
+  const gradient = ctx.createRadialGradient(px, py, innerRadius, px, py, outerRadius);
+  gradient.addColorStop(0, 'rgba(0,0,0,0)');       // trung tâm sáng
+  gradient.addColorStop(1, 'rgba(0,0,0,0.95)');    // ngoài tối
+
+  // phủ gradient lên toàn canvas
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+
+let ghosts = [];
+function spawnGhost() {
+  const x = Math.random() * MAP_COLS * T;
+  const y = Math.random() * MAP_ROWS * T;
+  ghosts.push(new Ghost(x, y));
+}
+
+function drawGhosts(camX, camY) {
+  ghosts.forEach(ghost => {
+    // 1. Tính toán vị trí hiển thị trên màn hình
+    const gx = ghost.x - camX + ghost.w / 2;
+    const gy = ghost.y - camY + ghost.h / 2;
+
+    ctx.save(); // Lưu trạng thái canvas
+
+    // 2. Tạo hiệu ứng phát sáng (Glow)
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = 'rgba(200, 230, 255, 0.5)';
+    
+    // 3. Vẽ thân ma (Hình giọt nước ngược hoặc elip)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'; // Trong suốt một chút
+    ctx.beginPath();
+    // Vẽ đầu tròn
+    ctx.arc(gx, gy, ghost.w / 2, Math.PI, 0); 
+    // Vẽ thân dưới hơi loe ra hoặc răng cưa
+    ctx.lineTo(gx + ghost.w / 2, gy + ghost.h / 2);
+    ctx.lineTo(gx - ghost.w / 2, gy + ghost.h / 2);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#000';
+    const eyeSize = ghost.w / 8;
+    const eyeOffset = ghost.w / 4;
+    
+    // Mắt trái
+    ctx.beginPath();
+    ctx.arc(gx - eyeOffset/1.5, gy - 2, eyeSize, 0, Math.PI * 2);
+    ctx.fill();
+    // Mắt phải
+    ctx.beginPath();
+    ctx.arc(gx + eyeOffset/1.5, gy - 2, eyeSize, 0, Math.PI * 2);
+    ctx.fill();
+
+    const barW = ghost.w;          // Độ rộng thanh máu bằng độ rộng quái
+    const barH = 4;                // Độ cao thanh máu
+    const barX = gx - ghost.w / 2; // Căn lề trái thanh máu
+    const barY = gy - ghost.h / 2 - 10; // Đặt phía trên đầu con ma 10px
+
+    // Vẽ nền thanh máu (Màu đỏ tối hoặc xám)
+    ctx.fillStyle = '#440000';
+    ctx.fillRect(barX, barY, barW, barH);
+
+    // Vẽ lượng máu hiện tại (Màu đỏ tươi hoặc xanh lá)
+    // Giả sử ghost có thuộc tính ghost.hp và ghost.maxHp
+    const hpPercent = Math.max(0, ghost.hp / ghost.maxHp); 
+    ctx.fillStyle = '#ff4444';
+    ctx.fillRect(barX, barY, barW * hpPercent, barH);
+
+    // (Tùy chọn) Vẽ viền cho thanh máu cho sắc nét
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(barX, barY, barW, barH);
+
+    ctx.restore(); // Khôi phục trạng thái (để không làm mờ các vật thể khác)
+  });
+}
+
+function updateGhosts() {
+  ghosts.forEach(ghost => {
+    const dx = player.x - ghost.x;
+    const dy = player.y - ghost.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist > 0) {
+      ghost.x += (dx / dist) * ghost.speed;
+      ghost.y += (dy / dist) * ghost.speed;
+    }
+
+    if (Math.abs(ghost.x - player.x) < 2 && Math.abs(ghost.y - player.y) < 2) {
+      player.hp -= 0.1; 
+    }
+  });
+}
+
+function drawEndingScene(win) {
+  const { width, height } = canvas;
+
+  ctx.save();
+
+  // 1. Phủ một lớp màn mờ ảo hơn
+  // Dùng Gradient để nhìn có chiều sâu hơn là màu đen phẳng
+  const overlay = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width/2);
+  overlay.addColorStop(0, 'rgba(0, 0, 0, 0.7)');
+  overlay.addColorStop(1, 'rgba(0, 0, 0, 0.9)');
+  ctx.fillStyle = overlay;
+  ctx.fillRect(0, 0, width, height);
+
+  // 2. Cấu hình chung cho Text
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  
+  // 3. Vẽ tiêu đề chính (YOU WIN / GAME OVER)
+  const titleColor = win ? '#4CAF50' : '#FF5252'; // Xanh lá nếu thắng, Đỏ nếu thua
+  ctx.fillStyle = titleColor;
+  ctx.font = 'bold 64px "JetBrains Mono", monospace';
+  
+  // Thêm hiệu ứng phát sáng cho chữ
+  ctx.shadowBlur = 20;
+  ctx.shadowColor = titleColor;
+  
+  ctx.fillText(
+    win ? '🏆 YOU WIN!' : '💀 GAME OVER', 
+    width / 2, 
+    height / 2 - 50
+  );
+
+  // 4. Vẽ dòng chữ hướng dẫn (Press R)
+  ctx.shadowBlur = 0; // Tắt shadow để chữ nhỏ dễ đọc hơn
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '20px "JetBrains Mono", monospace';
+  
+  // Thêm hiệu ứng nhấp nháy nhẹ bằng cách dùng Math.sin (tùy chọn)
+  const opacity = 0.5 + Math.sin(Date.now() / 200) * 0.5;
+  ctx.globalAlpha = opacity; 
+  
+  ctx.fillText('RELOAD TO RESTART', width / 2, height / 2 + 50);
+  
+  // 5. Thêm một đường gạch ngang trang trí (Optional)
+  ctx.globalAlpha = 1.0;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+  ctx.beginPath();
+  ctx.moveTo(width / 2 - 100, height / 2);
+  ctx.lineTo(width / 2 + 100, height / 2);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+let amount = 1;
+if (state.difficulty === "hard") amount = 5;
+
+function loop() {
+    player.attackCooldown--;
+    MouseMoving(canvas, T, (check) => {
+    if (check === 1) {
+        CallAPI(surroundingMatrix).then(data => {
+            tilemap = data.result;
+            });
+            player.x = (MAP_COLS * T) / 2 - player.w / 2;
+            player.y = (MAP_ROWS * T) / 2 - player.h / 2 + 48;
+            player.vx = 0;
+            player.vy = 0;
+
+            targetx = player.x - canvas.width / 2;
+            targety = player.y - canvas.height / 2 + 48;
+
+            camera.x = (targetx - camera.x)*0.05;
+            camera.y = (targety - camera.y)*0.05;
+        };
+    });
+  if (ghosts.length <amount){
+    spawnGhost();
+  }
+  update();
+  updateGhosts();
+  drawSky();
+  drawTilemap(camera.x, camera.y);
+  drawPlayer(camera.x, camera.y);
+  drawGhosts(camera.x, camera.y);
+  if (state.difficulty === "hard")
+  {
+  drawLighting();
+  mutateTerrainInDarkness(camera.x, camera.y, 320);
+  }
+  drawHUD();
+  if (iron >=5 && gold >=5 && diamond >= 5 && kills >= 10) drawEndingScene(1);
+  else if (player.hp <=0) drawEndingScene(0);
+  requestAnimationFrame(loop);
+}
+
+setupBlockBreaking();
+
+canvas.setAttribute('tabindex', '0'); 
+canvas.focus();
+loop();
+  // Cleanup when leaving game step
+  canvas._arenaCleanup = () => {
+    cancelAnimationFrame(arenaFrameId);
+    clearInterval(spawnTimer);
+    window.removeEventListener('keydown', onKeyDown);
+    window.removeEventListener('keyup',   onKeyUp);
+  };
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+const bgm = new Audio("Audio\videoplayback.m4a.crdownload");
+bgm.volume = 0.5;
+bgm.play();
+createPixelEditor('char-editor', 32, 32, 12, 'characterData');
+createPixelEditor('wpn-editor',  16, 16, 24, 'weaponData');
+</script>
+</body>
+</html>
